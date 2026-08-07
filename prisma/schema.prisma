@@ -1,0 +1,449 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ──────────────────────────────────────────────
+// USERS & AUTH
+// ──────────────────────────────────────────────
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  name          String?
+  phone         String?
+  passwordHash  String?
+  image         String?
+  role          UserRole  @default(CUSTOMER)
+  emailVerified DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  // Relations
+  accounts      Account[]
+  sessions      Session[]
+  shop          BarberShop?   @relation("ShopOwner")
+  barberProfile BarberProfile?
+  bookings      Booking[]
+  queueEntries  QueueEntry[]
+  reviews       Review[]
+  customerPoints CustomerPoints?
+  referralsMade Referral[]    @relation("Referrer")
+  referralsReceived Referral[] @relation("Referred")
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+  @@unique([identifier, token])
+}
+
+// ──────────────────────────────────────────────
+// BARBERSHOP
+// ──────────────────────────────────────────────
+
+model BarberShop {
+  id            String    @id @default(cuid())
+  ownerId       String
+  name          String
+  slug          String    @unique
+  description   String?
+  phone         String
+  email         String
+  address       String
+  city          String
+  state         String?
+  zipCode       String?
+  country       String    @default("US")
+  latitude      Float?
+  longitude     Float?
+  logoUrl       String?
+  coverUrl      String?
+  openingHours  Json      // { mon: { open: "09:00", close: "18:00" }, ... }
+  isActive      Boolean   @default(true)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  // Relations
+  owner         User      @relation("ShopOwner", fields: [ownerId], references: [id])
+  barbers       BarberProfile[]
+  services      Service[]
+  queues        Queue[]
+  bookings      Booking[]
+  reviews       Review[]
+
+  @@unique([ownerId])
+  @@index([slug])
+}
+
+// ──────────────────────────────────────────────
+// BARBER PROFILE
+// ──────────────────────────────────────────────
+
+model BarberProfile {
+  id            String    @id @default(cuid())
+  userId        String    @unique
+  shopId        String
+  bio           String?
+  specialties   String[]  // ["fades", "beard", "kids"]
+  yearsExp      Int?
+  avatarUrl     String?
+  rating        Float     @default(0)
+  totalReviews  Int       @default(0)
+  isAvailable   Boolean   @default(true)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  // Relations
+  user          User      @relation(fields: [userId], references: [id])
+  shop          BarberShop @relation(fields: [shopId], references: [id])
+  services      BarberService[]
+  bookings      Booking[]
+  queueEntries  QueueEntry[]
+  portfolio     PortfolioImage[]
+  reviews       Review[]
+
+  @@index([shopId])
+}
+
+// ──────────────────────────────────────────────
+// SERVICES
+// ──────────────────────────────────────────────
+
+model Service {
+  id          String    @id @default(cuid())
+  shopId      String
+  name        String
+  description String?
+  duration    Int       // minutes
+  price       Float
+  category    String    // "haircut", "beard", "combo", "kids"
+  isActive    Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  // Relations
+  shop        BarberShop @relation(fields: [shopId], references: [id])
+  barbers     BarberService[]
+  bookings    Booking[]
+
+  @@index([shopId])
+  @@index([category])
+}
+
+model BarberService {
+  id        String  @id @default(cuid())
+  barberId  String
+  serviceId String
+  price     Float?  // Override price (nullable = use service default)
+
+  barber  BarberProfile @relation(fields: [barberId], references: [id])
+  service Service       @relation(fields: [serviceId], references: [id])
+
+  @@unique([barberId, serviceId])
+}
+
+// ──────────────────────────────────────────────
+// BOOKINGS
+// ──────────────────────────────────────────────
+
+model Booking {
+  id              String        @id @default(cuid())
+  customerId      String
+  barberId        String
+  serviceId       String
+  shopId          String
+  scheduledAt     DateTime
+  duration        Int           // minutes
+  status          BookingStatus @default(PENDING)
+  paymentStatus   PaymentStatus @default(PENDING)
+  stripePaymentId String?
+  notes           String?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  // Relations
+  customer  User            @relation(fields: [customerId], references: [id])
+  barber    BarberProfile   @relation(fields: [barberId], references: [id])
+  service   Service         @relation(fields: [serviceId], references: [id])
+  shop      BarberShop      @relation(fields: [shopId], references: [id])
+
+  @@index([customerId])
+  @@index([barberId])
+  @@index([shopId])
+  @@index([scheduledAt])
+  @@index([status])
+}
+
+// ──────────────────────────────────────────────
+// QUEUE MANAGEMENT
+// ──────────────────────────────────────────────
+
+model Queue {
+  id              String    @id @default(cuid())
+  shopId          String
+  isActive        Boolean   @default(true)
+  currentNumber   Int       @default(0)
+  estimatedWait   Int       @default(0) // minutes
+  avgServiceTime  Int       @default(20) // minutes
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  // Relations
+  shop      BarberShop  @relation(fields: [shopId], references: [id])
+  entries   QueueEntry[]
+
+  @@unique([shopId])
+}
+
+model QueueEntry {
+  id            String      @id @default(cuid())
+  queueId       String
+  customerId    String
+  barberId      String?
+  ticketNumber  Int
+  status        QueueStatus @default(WAITING)
+  serviceType   String?     // "haircut", "beard", etc.
+  joinedAt      DateTime    @default(now())
+  calledAt      DateTime?
+  startedAt     DateTime?
+  completedAt   DateTime?
+
+  // Relations
+  queue     Queue          @relation(fields: [queueId], references: [id])
+  customer  User           @relation(fields: [customerId], references: [id])
+  barber    BarberProfile? @relation(fields: [barberId], references: [id])
+
+  @@index([queueId])
+  @@index([customerId])
+  @@index([status])
+}
+
+// ──────────────────────────────────────────────
+// PORTFOLIO
+// ──────────────────────────────────────────────
+
+model PortfolioImage {
+  id          String    @id @default(cuid())
+  barberId    String
+  imageUrl    String
+  caption     String?
+  category    String    // "fade", "beard", "classic", "creative"
+  tags        String[]
+  likes       Int       @default(0)
+  isFeatured  Boolean   @default(false)
+  createdAt   DateTime  @default(now())
+
+  // Relations
+  barber      BarberProfile @relation(fields: [barberId], references: [id])
+
+  @@index([barberId])
+  @@index([category])
+}
+
+// ──────────────────────────────────────────────
+// REVIEWS
+// ──────────────────────────────────────────────
+
+model Review {
+  id          String    @id @default(cuid())
+  customerId  String
+  shopId      String
+  barberId    String?
+  rating      Int       // 1-5
+  comment     String?
+  images      String[]
+  isVerified  Boolean   @default(false)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  // Relations
+  customer  User            @relation(fields: [customerId], references: [id])
+  shop      BarberShop      @relation(fields: [shopId], references: [id])
+  barber    BarberProfile?  @relation(fields: [barberId], references: [id])
+
+  @@index([shopId])
+  @@index([barberId])
+  @@index([rating])
+}
+
+// ──────────────────────────────────────────────
+// CUSTOMER RANKING & POINTS
+// ──────────────────────────────────────────────
+
+model CustomerPoints {
+  id            String    @id @default(cuid())
+  customerId    String    @unique
+  points        Int       @default(0)
+  tier          Tier      @default(BRONZE)
+  totalVisits   Int       @default(0)
+  totalSpent    Float     @default(0)
+  streakDays    Int       @default(0)
+  lastVisitAt   DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  // Relations
+  customer      User      @relation(fields: [customerId], references: [id])
+  rewards       Reward[]
+
+  @@index([tier])
+  @@index([points])
+}
+
+model Reward {
+  id              String    @id @default(cuid())
+  pointsId        String
+  name            String
+  description     String?
+  pointsCost      Int
+  type            RewardType
+  isRedeemed      Boolean   @default(false)
+  redeemedAt      DateTime?
+  expiresAt       DateTime?
+  createdAt       DateTime  @default(now())
+
+  // Relations
+  points          CustomerPoints @relation(fields: [pointsId], references: [id])
+
+  @@index([pointsId])
+}
+
+// ──────────────────────────────────────────────
+// REFERRALS
+// ──────────────────────────────────────────────
+
+model Referral {
+  id            String    @id @default(cuid())
+  referrerId    String
+  referredId    String?
+  code          String    @unique
+  status        ReferralStatus @default(PENDING)
+  rewardEarned  Int       @default(0)
+  createdAt     DateTime  @default(now())
+  completedAt   DateTime?
+
+  // Relations
+  referrer      User @relation("Referrer", fields: [referrerId], references: [id])
+  referred      User? @relation("Referred", fields: [referredId], references: [id])
+
+  @@index([referrerId])
+  @@index([code])
+}
+
+// ──────────────────────────────────────────────
+// NOTIFICATIONS
+// ──────────────────────────────────────────────
+
+model Notification {
+  id          String    @id @default(cuid())
+  userId      String
+  type        NotificationType
+  title       String
+  message     String
+  data        Json?     // Additional payload
+  isRead      Boolean   @default(false)
+  createdAt   DateTime  @default(now())
+
+  @@index([userId])
+  @@index([isRead])
+}
+
+// ──────────────────────────────────────────────
+// ENUMS
+// ──────────────────────────────────────────────
+
+enum UserRole {
+  CUSTOMER
+  BARBER
+  SHOP_OWNER
+  ADMIN
+}
+
+enum BookingStatus {
+  PENDING
+  CONFIRMED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+  NO_SHOW
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  REFUNDED
+  FAILED
+}
+
+enum QueueStatus {
+  WAITING
+  CALLED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+enum Tier {
+  BRONZE
+  SILVER
+  GOLD
+  PLATINUM
+}
+
+enum RewardType {
+  DISCOUNT
+  FREE_SERVICE
+  PRIORITY_BOOKING
+  EXCLUSIVE_ACCESS
+}
+
+enum ReferralStatus {
+  PENDING
+  COMPLETED
+  EXPIRED
+}
+
+enum NotificationType {
+  BOOKING_CONFIRMED
+  BOOKING_REMINDER
+  BOOKING_CANCELLED
+  QUEUE_UPDATE
+  QUEUE_YOUR_TURN
+  REWARD_EARNED
+  REFERRAL_COMPLETE
+  PROMOTIONAL
+  SYSTEM
+}

@@ -1,0 +1,181 @@
+@import "tailwindcss";
+
+/* ──────────────────────────────────────────────
+   CUTQUEUE DESIGN SYSTEM
+   Dark Editorial Theme (Green + Gold)
+   ────────────────────────────────────────────── */
+
+@theme inline {
+  /* Colors */
+  --color-background: #0F1B17;
+  --color-foreground: #EFE9DA;
+  --color-surface: #1E2E29;
+  --color-surface-2: #2A3F3A;
+  --color-gold: #E8B547;
+  --color-gold-dark: #D4A43D;
+  --color-cream: #EFE9DA;
+  --color-muted: #EFE9DA66;
+
+  /* Typography */
+  --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+  --font-display: 'Fraunces', 'Playfair Display', Georgia, serif;
+
+  /* Spacing */
+  --spacing-18: 4.5rem;
+
+  /* Border Radius */
+  --radius-xl: 0.75rem;
+  --radius-2xl: 1rem;
+  --radius-3xl: 1.5rem;
+}
+
+/* ──────────────────────────────────────────────
+   BASE STYLES
+   ────────────────────────────────────────────── */
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background: var(--color-background);
+  color: var(--color-foreground);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ──────────────────────────────────────────────
+   CUSTOM SCROLLBAR
+   ────────────────────────────────────────────── */
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--color-background);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-surface-2);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-gold);
+}
+
+/* ──────────────────────────────────────────────
+   SELECTION
+   ────────────────────────────────────────────── */
+
+::selection {
+  background: var(--color-gold);
+  color: var(--color-background);
+}
+
+/* ──────────────────────────────────────────────
+   FOCUS STYLES
+   ────────────────────────────────────────────── */
+
+:focus-visible {
+  outline: 2px solid var(--color-gold);
+  outline-offset: 2px;
+}
+
+/* ──────────────────────────────────────────────
+   ANIMATIONS
+   ────────────────────────────────────────────── */
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slide-in-right {
+  from {
+    opacity: 0;
+    transform: translateX(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes pulse-gold {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(232, 181, 71, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 0 10px rgba(232, 181, 71, 0);
+  }
+}
+
+.animate-fade-in {
+  animation: fade-in 0.3s ease-out;
+}
+
+.animate-slide-in-right {
+  animation: slide-in-right 0.3s ease-out;
+}
+
+.animate-pulse-gold {
+  animation: pulse-gold 2s infinite;
+}
+
+/* ──────────────────────────────────────────────
+   GLASS MORPHISM
+   ────────────────────────────────────────────── */
+
+.glass {
+  background: rgba(30, 46, 41, 0.8);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(42, 63, 58, 0.5);
+}
+
+/* ──────────────────────────────────────────────
+   QUEUE ANIMATIONS
+   ────────────────────────────────────────────── */
+
+@keyframes queue-pulse {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.05);
+    opacity: 0.8;
+  }
+}
+
+.queue-active {
+  animation: queue-pulse 2s ease-in-out infinite;
+}
+
+@keyframes ticket-flash {
+  0%, 100% {
+    background-color: var(--color-surface);
+  }
+  50% {
+    background-color: var(--color-gold);
+    color: var(--color-background);
+  }
+}
+
+.ticket-called {
+  animation: ticket-flash 0.5s ease-in-out 3;
+}
