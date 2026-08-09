@@ -14,13 +14,14 @@ interface QueueEntry {
   joinedAt: Date
 }
 
+const BASE_TIME = 1700000000000
 const mockQueue: QueueEntry[] = [
-  { id: '1', ticketNumber: 1001, name: 'Marcus J.', service: 'Fade + Beard', status: 'completed', joinedAt: new Date(Date.now() - 45 * 60000) },
-  { id: '2', ticketNumber: 1002, name: 'Andre W.', service: 'Classic Cut', status: 'in-progress', joinedAt: new Date(Date.now() - 30 * 60000) },
-  { id: '3', ticketNumber: 1003, name: 'DeShawn M.', service: 'Skin Fade', status: 'called', joinedAt: new Date(Date.now() - 20 * 60000) },
-  { id: '4', ticketNumber: 1004, name: 'Chris P.', service: 'Beard Trim', status: 'waiting', joinedAt: new Date(Date.now() - 15 * 60000) },
-  { id: '5', ticketNumber: 1005, name: 'Jamal K.', service: 'Kids Cut', status: 'waiting', joinedAt: new Date(Date.now() - 10 * 60000) },
-  { id: '6', ticketNumber: 1006, name: 'Tyler R.', service: 'Fade + Line', status: 'waiting', joinedAt: new Date(Date.now() - 5 * 60000) },
+  { id: '1', ticketNumber: 1001, name: 'Marcus J.', service: 'Fade + Beard', status: 'completed', joinedAt: new Date(BASE_TIME) },
+  { id: '2', ticketNumber: 1002, name: 'Andre W.', service: 'Classic Cut', status: 'in-progress', joinedAt: new Date(BASE_TIME + 15 * 60000) },
+  { id: '3', ticketNumber: 1003, name: 'DeShawn M.', service: 'Skin Fade', status: 'called', joinedAt: new Date(BASE_TIME + 25 * 60000) },
+  { id: '4', ticketNumber: 1004, name: 'Chris P.', service: 'Beard Trim', status: 'waiting', joinedAt: new Date(BASE_TIME + 30 * 60000) },
+  { id: '5', ticketNumber: 1005, name: 'Jamal K.', service: 'Kids Cut', status: 'waiting', joinedAt: new Date(BASE_TIME + 35 * 60000) },
+  { id: '6', ticketNumber: 1006, name: 'Tyler R.', service: 'Fade + Line', status: 'waiting', joinedAt: new Date(BASE_TIME + 40 * 60000) },
 ]
 
 const statusColors = {
@@ -39,9 +40,12 @@ const statusLabels = {
 
 export default function QueuePage() {
   const [queue, setQueue] = useState<QueueEntry[]>(mockQueue)
-  const [currentTime, setCurrentTime] = useState(new Date())
+  const [currentTime, setCurrentTime] = useState(() => new Date(BASE_TIME + 40 * 60000))
+  const [mounted, setMounted] = useState(false)
 
   useEffect(() => {
+    setMounted(true)
+    setCurrentTime(new Date())
     const timer = setInterval(() => {
       setCurrentTime(new Date())
     }, 1000)

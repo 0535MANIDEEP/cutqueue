@@ -105,7 +105,7 @@ export function Footer() {
 
         {/* Bottom Bar */}
         <div className="mt-12 pt-8 border-t border-[#2A3F3A]/50 flex flex-col md:flex-row justify-between items-center gap-4">
-          <p className="text-sm text-[#EFE9DA]/40">
+          <p className="text-sm text-[#EFE9DA]/40" suppressHydrationWarning>
             © {new Date().getFullYear()} CutQueue. All rights reserved.
           </p>
           <div className="flex gap-4">
