@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
+import { notifyBookingCreated, notifyBookingCancelled, notifyBookingCompleted, triggerN8NWebhook } from "@/lib/notify"
 
 export async function GET(req: Request) {
   try {
@@ -132,7 +133,14 @@ export async function POST(req: Request) {
         notes,
         status: "PENDING",
       },
+      include: {
+        service: { select: { name: true } },
+        business: { select: { name: true } },
+      },
     })
+
+    await notifyBookingCreated(booking)
+    await triggerN8NWebhook("booking.created", { bookingId: booking.id, businessId })
 
     return NextResponse.json(booking, { status: 201 })
   } catch (error) {
@@ -164,6 +172,10 @@ export async function PATCH(req: Request) {
 
     const booking = await prisma.booking.findUnique({
       where: { id: bookingId },
+      include: {
+        service: { select: { name: true } },
+        business: { select: { name: true } },
+      },
     })
 
     if (!booking) {
@@ -207,6 +219,16 @@ export async function PATCH(req: Request) {
       where: { id: bookingId },
       data: updateData,
     })
+
+    if (status === "CANCELLED") {
+      await notifyBookingCancelled(booking)
+      await triggerN8NWebhook("booking.cancelled", { bookingId, businessId: booking.businessId })
+    } else if (status === "COMPLETED") {
+      await notifyBookingCompleted(booking)
+      await triggerN8NWebhook("booking.completed", { bookingId, businessId: booking.businessId })
+    } else if (status === "CONFIRMED") {
+      await triggerN8NWebhook("booking.confirmed", { bookingId, businessId: booking.businessId })
+    }
 
     return NextResponse.json(updated)
   } catch (error) {

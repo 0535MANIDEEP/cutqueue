@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
+import { notifyComplaintCreated, notifyComplaintResponded } from "@/lib/notify"
 
 const validCategories = ["SERVICE_QUALITY", "WAIT_TIME", "STAFF_BEHAVIOR", "PRICING", "CLEANLINESS", "OTHER"]
 const validStatuses = ["OPEN", "IN_PROGRESS", "RESOLVED", "DISMISSED"]
@@ -82,6 +83,8 @@ export async function POST(req: Request) {
       },
     })
 
+    await notifyComplaintCreated(complaint)
+
     return NextResponse.json(complaint, { status: 201 })
   } catch (error) {
     console.error("Complaints POST error:", error)
@@ -146,6 +149,15 @@ export async function PATCH(req: Request) {
       where: { id: complaintId },
       data: updateData,
     })
+
+    if (response) {
+      await notifyComplaintResponded({
+        id: complaint.id,
+        customerId: complaint.customerId,
+        subject: complaint.subject,
+        response,
+      })
+    }
 
     return NextResponse.json(updated)
   } catch (error) {

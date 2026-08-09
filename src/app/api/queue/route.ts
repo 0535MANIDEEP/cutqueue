@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
+import { notifyQueueJoined, notifyQueueCalled, triggerN8NWebhook } from "@/lib/notify"
 
 export async function GET(req: Request) {
   try {
@@ -118,6 +119,24 @@ export async function POST(req: Request) {
         ticketNumber,
         status: "WAITING",
       },
+    })
+
+    const waitingCount = await prisma.queueEntry.count({
+      where: { queueId: queue.id, status: "WAITING" },
+    })
+
+    await notifyQueueJoined({
+      id: entry.id,
+      userId: session.user.id,
+      ticketNumber: entry.ticketNumber,
+      position: waitingCount,
+      estimatedWait: waitingCount * 20,
+    })
+
+    await triggerN8NWebhook("queue.joined", {
+      queueId: queue.id,
+      ticketNumber: entry.ticketNumber,
+      businessId,
     })
 
     return NextResponse.json(entry, { status: 201 })

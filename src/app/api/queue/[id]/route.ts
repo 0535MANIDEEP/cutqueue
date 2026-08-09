@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
+import { notifyQueueCalled, triggerN8NWebhook } from "@/lib/notify"
 
 export async function PATCH(
   req: Request,
@@ -33,6 +34,16 @@ export async function PATCH(
     switch (action) {
       case "call":
         updateData = { status: "CALLED", calledAt: new Date() }
+        await notifyQueueCalled({
+          id: entry.id,
+          userId: entry.customerId,
+          ticketNumber: entry.ticketNumber,
+        })
+        await triggerN8NWebhook("queue.called", {
+          queueId: entry.queueId,
+          ticketNumber: entry.ticketNumber,
+          businessId: entry.queue.businessId,
+        })
         break
       case "start":
         updateData = { status: "IN_PROGRESS", startedAt: new Date() }
@@ -49,6 +60,11 @@ export async function PATCH(
             estimatedWait: waitingCount * 20,
           },
         })
+        await triggerN8NWebhook("queue.completed", {
+          queueId: entry.queueId,
+          ticketNumber: entry.ticketNumber,
+          businessId: entry.queue.businessId,
+        })
         break
       case "cancel":
         updateData = { status: "CANCELLED" }
@@ -64,7 +80,7 @@ export async function PATCH(
 
     return NextResponse.json(updated)
   } catch (error) {
-    console.error("Route error:", error)
+    console.error("Queue PATCH error:", error)
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })
   }
 }
