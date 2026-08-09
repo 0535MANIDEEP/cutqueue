@@ -14,7 +14,25 @@ export default function DashboardPage() {
       router.push("/auth/signin")
     }
     if (status === "authenticated" && session?.user?.role) {
-      const path = getDashboardPath(session.user.role as "CUSTOMER" | "STAFF" | "BUSINESS_OWNER" | "ADMIN")
+      const role = session.user.role as "CUSTOMER" | "STAFF" | "BUSINESS_OWNER" | "ADMIN"
+
+      if (role === "BUSINESS_OWNER") {
+        fetch("/api/business/settings")
+          .then((res) => res.json())
+          .then((data) => {
+            if (data.error) {
+              router.push("/onboarding")
+            } else {
+              router.push("/dashboard/owner")
+            }
+          })
+          .catch(() => {
+            router.push("/onboarding")
+          })
+        return
+      }
+
+      const path = getDashboardPath(role)
       router.push(path)
     }
   }, [status, session, router])

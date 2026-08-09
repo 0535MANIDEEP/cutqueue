@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import bcrypt from "bcryptjs"
 import { prisma } from "@/lib/prisma"
+import { templates } from "@/lib/templates"
 
 export async function POST(req: Request) {
   try {
@@ -81,6 +82,20 @@ export async function POST(req: Request) {
           queueType: template.queueType as string,
         },
       })
+
+      const templateData = templates.find((t) => t.slug === (templateSlug || "barbershop"))
+      if (templateData?.defaultServices) {
+        await prisma.service.createMany({
+          data: templateData.defaultServices.map((s) => ({
+            businessId: business.id,
+            name: s.name,
+            description: s.name,
+            duration: s.duration,
+            price: s.price,
+            category: s.category,
+          })),
+        })
+      }
     }
 
     return NextResponse.json(

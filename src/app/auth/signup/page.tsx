@@ -7,16 +7,18 @@ import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent } from "@/components/ui/card"
+import { templates } from "@/lib/templates"
 
 export default function SignUpPage() {
   const router = useRouter()
+  const [isOwner, setIsOwner] = useState(false)
   const [formData, setFormData] = useState({
     name: "",
     email: "",
     password: "",
     phone: "",
-    shopName: "",
-    isBarber: false,
+    businessName: "",
+    templateSlug: "barbershop",
   })
   const [error, setError] = useState("")
   const [loading, setLoading] = useState(false)
@@ -30,7 +32,14 @@ export default function SignUpPage() {
       const res = await fetch("/api/auth/signup", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData),
+        body: JSON.stringify({
+          name: formData.name,
+          email: formData.email,
+          password: formData.password,
+          phone: formData.phone,
+          shopName: isOwner ? formData.businessName : undefined,
+          templateSlug: isOwner ? formData.templateSlug : undefined,
+        }),
       })
 
       const data = await res.json()
@@ -51,7 +60,7 @@ export default function SignUpPage() {
         setError("Account created but sign-in failed. Please try signing in.")
         setLoading(false)
       } else {
-        router.push(formData.isBarber ? "/dashboard" : "/")
+        router.push(isOwner ? "/dashboard/owner" : "/book")
         router.refresh()
       }
     } catch {
@@ -94,28 +103,50 @@ export default function SignUpPage() {
               <div className="flex items-center gap-3 p-3 rounded-lg bg-[#0A0F0D] border border-[#263329]">
                 <input
                   type="checkbox"
-                  id="isBarber"
-                  checked={formData.isBarber}
-                  onChange={(e) => setFormData({ ...formData, isBarber: e.target.checked })}
+                  id="isOwner"
+                  checked={isOwner}
+                  onChange={(e) => setIsOwner(e.target.checked)}
                   className="w-4 h-4 rounded border-[#263329] bg-[#0A0F0D] text-[#E8B547] focus:ring-[#E8B547]"
                 />
-                <label htmlFor="isBarber" className="text-sm text-[#EFE9DA]">
-                  I&apos;m a barber / shop owner
+                <label htmlFor="isOwner" className="text-sm text-[#EFE9DA]">
+                  I own a business
                 </label>
               </div>
 
-              {formData.isBarber && (
-                <div>
-                  <label className="block text-sm font-medium text-[#EFE9DA] mb-2">
-                    Shop Name
-                  </label>
-                  <Input
-                    type="text"
-                    placeholder="Sharp Edgez Barbershop"
-                    value={formData.shopName}
-                    onChange={(e) => setFormData({ ...formData, shopName: e.target.value })}
-                  />
-                </div>
+              {isOwner && (
+                <>
+                  <div>
+                    <label className="block text-sm font-medium text-[#EFE9DA] mb-2">
+                      Business Name
+                    </label>
+                    <Input
+                      type="text"
+                      placeholder="Sharp Edgez Barbershop"
+                      value={formData.businessName}
+                      onChange={(e) => setFormData({ ...formData, businessName: e.target.value })}
+                      required={isOwner}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-[#EFE9DA] mb-2">
+                      Industry
+                    </label>
+                    <select
+                      value={formData.templateSlug}
+                      onChange={(e) => setFormData({ ...formData, templateSlug: e.target.value })}
+                      className="w-full rounded-lg bg-[#0F1B17] border border-[#2A3F3A] px-4 py-3 text-[#EFE9DA] focus:outline-none focus:ring-2 focus:ring-[#E8B547]/50 focus:border-[#E8B547] transition-all duration-200"
+                    >
+                      {templates.map((t) => (
+                        <option key={t.slug} value={t.slug}>
+                          {t.icon} {t.name}
+                        </option>
+                      ))}
+                    </select>
+                    <p className="mt-1 text-xs text-[#EFE9DA]/40">
+                      We&apos;ll pre-fill services and settings for your industry
+                    </p>
+                  </div>
+                </>
               )}
 
               <div>
@@ -146,18 +177,6 @@ export default function SignUpPage() {
 
               <div>
                 <label className="block text-sm font-medium text-[#EFE9DA] mb-2">
-                  Phone (optional)
-                </label>
-                <Input
-                  type="tel"
-                  placeholder="(555) 123-4567"
-                  value={formData.phone}
-                  onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-[#EFE9DA] mb-2">
                   Password
                 </label>
                 <Input
@@ -178,7 +197,11 @@ export default function SignUpPage() {
                 size="lg"
                 disabled={loading}
               >
-                {loading ? "Creating account..." : "Create Account"}
+                {loading
+                  ? "Creating account..."
+                  : isOwner
+                    ? "Create Account & Business"
+                    : "Create Account"}
               </Button>
             </form>
 
