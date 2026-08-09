@@ -1,0 +1,161 @@
+{
+  "name": "CutQueue - Auto Booking",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "auto-booking",
+        "responseMode": "responseNode"
+      },
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "position": [250, 300],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "model": "gemini-flash",
+        "messages": {
+          "values": [
+            {
+              "content": "Extract booking details from this customer message: '{{$json.body.message}}'\n\nReturn JSON with: name, phone, service (haircut/beard/combo), preferredDate (YYYY-MM-DD), preferredTime (HH:MM)\n\nIf any field is missing, return what you can extract and note what's missing."
+            }
+          ]
+        },
+        "options": {
+          "temperature": 0.3,
+          "responseFormat": "json"
+        }
+      },
+      "name": "Extract Details with AI",
+      "type": "n8n-nodes-base.openAi",
+      "position": [450, 300],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{$json.name}}",
+              "operation": "isNotEmpty"
+            },
+            {
+              "value1": "={{$json.phone}}",
+              "operation": "isNotEmpty"
+            }
+          ]
+        }
+      },
+      "name": "Check Complete",
+      "type": "n8n-nodes-base.if",
+      "position": [650, 300],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "url": "https://api.cutqueue.app/api/n8n/availability?shopId={{$json.shopId}}&date={{$json.preferredDate}}",
+        "options": {},
+        "headers": {
+          "Authorization": "Bearer {{$env.CUTQUEUE_API_KEY}}"
+        }
+      },
+      "name": "Check Availability",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [850, 200],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "url": "https://api.cutqueue.app/api/n8n/booking/create",
+        "method": "POST",
+        "options": {},
+        "headers": {
+          "Authorization": "Bearer {{$env.CUTQUEUE_API_KEY}}",
+          "Content-Type": "application/json"
+        },
+        "body": {
+          "shopId": "={{$json.shopId}}",
+          "customerName": "={{$json.name}}",
+          "customerPhone": "={{$json.phone}}",
+          "serviceId": "={{$json.serviceId}}",
+          "date": "={{$json.preferredDate}}",
+          "time": "={{$json.preferredTime}}"
+        }
+      },
+      "name": "Create Booking",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [1050, 200],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "to": "={{$json.customerPhone}}",
+        "body": "={{$json.confirmation}}",
+        "from": "={{$env.TWILIO_PHONE_NUMBER}}"
+      },
+      "name": "Send Confirmation SMS",
+      "type": "n8n-nodes-base.twilio",
+      "position": [1250, 200],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "url": "https://api.cutqueue.app/api/n8n/queue/add",
+        "method": "POST",
+        "options": {},
+        "headers": {
+          "Authorization": "Bearer {{$env.CUTQUEUE_API_KEY}}",
+          "Content-Type": "application/json"
+        },
+        "body": {
+          "shopId": "={{$json.shopId}}",
+          "customerName": "={{$json.name}}",
+          "customerPhone": "={{$json.phone}}",
+          "serviceType": "={{$json.service}}"
+        }
+      },
+      "name": "Add to Queue Instead",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [850, 450],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "to": "={{$json.customerPhone}}",
+        "body": "={{$json.message}}",
+        "from": "={{$env.TWILIO_PHONE_NUMBER}}"
+      },
+      "name": "Send Queue SMS",
+      "type": "n8n-nodes-base.twilio",
+      "position": [1050, 450],
+      "typeVersion": 1
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [[{ "node": "Extract Details with AI", "type": "main", "index": 0 }]]
+    },
+    "Extract Details with AI": {
+      "main": [[{ "node": "Check Complete", "type": "main", "index": 0 }]]
+    },
+    "Check Complete": {
+      "main": [
+        [{ "node": "Check Availability", "type": "main", "index": 0 }],
+        [{ "node": "Add to Queue Instead", "type": "main", "index": 0 }]
+      ]
+    },
+    "Check Availability": {
+      "main": [[{ "node": "Create Booking", "type": "main", "index": 0 }]]
+    },
+    "Create Booking": {
+      "main": [[{ "node": "Send Confirmation SMS", "type": "main", "index": 0 }]]
+    },
+    "Add to Queue Instead": {
+      "main": [[{ "node": "Send Queue SMS", "type": "main", "index": 0 }]]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
+}

@@ -1,0 +1,145 @@
+{
+  "name": "CutQueue - Call Assist",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "call-assist",
+        "responseMode": "responseNode"
+      },
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "position": [250, 300],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{$json.body.From}}",
+              "operation": "isNotEmpty"
+            }
+          ]
+        }
+      },
+      "name": "Validate Input",
+      "type": "n8n-nodes-base.if",
+      "position": [450, 300],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "url": "https://api.cutqueue.app/api/n8n/availability?shopId={{$json.body.shopId}}",
+        "options": {},
+        "headers": {
+          "Authorization": "Bearer {{$env.CUTQUEUE_API_KEY}}"
+        }
+      },
+      "name": "Get Shop Availability",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [650, 200],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "model": "gemini-flash",
+        "messages": {
+          "values": [
+            {
+              "content": "You are a friendly barbershop assistant. Customer called from {{$json.body.From}}. They want to know about services and availability. Shop has these services: {{Get Shop Availability.output.services}}. Available times today: {{Get Shop Availability.output.availableTimes}}. Respond concisely and helpfully. Ask if they want to book or join the queue."
+            }
+          ]
+        },
+        "options": {
+          "temperature": 0.7
+        }
+      },
+      "name": "AI Assistant",
+      "type": "n8n-nodes-base.openAi",
+      "position": [850, 200],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "to": "={{$json.body.From}}",
+        "body": "={{$json.output}}",
+        "from": "={{$env.TWILIO_PHONE_NUMBER}}"
+      },
+      "name": "Send SMS Response",
+      "type": "n8n-nodes-base.twilio",
+      "position": [1050, 200],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{JSON.stringify({status: 'sent', to: $json.body.From})}}"
+      },
+      "name": "Respond",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "position": [1250, 200],
+      "typeVersion": 1
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Validate Input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Input": {
+      "main": [
+        [
+          {
+            "node": "Get Shop Availability",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Shop Availability": {
+      "main": [
+        [
+          {
+            "node": "AI Assistant",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Assistant": {
+      "main": [
+        [
+          {
+            "node": "Send SMS Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send SMS Response": {
+      "main": [
+        [
+          {
+            "node": "Respond",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
+}

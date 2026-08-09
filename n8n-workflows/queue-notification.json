@@ -1,0 +1,146 @@
+{
+  "name": "CutQueue - Queue Notifications",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "queue-notify",
+        "responseMode": "lastNode"
+      },
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "position": [250, 300],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{$json.body.action}}",
+              "operation": "equals",
+              "value2": "call"
+            }
+          ]
+        }
+      },
+      "name": "Is Call Action?",
+      "type": "n8n-nodes-base.if",
+      "position": [450, 300],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "url": "https://api.cutqueue.app/api/queue/{{$json.body.queueId}}",
+        "options": {},
+        "headers": {
+          "Authorization": "Bearer {{$env.CUTQUEUE_API_KEY}}"
+        }
+      },
+      "name": "Get Queue Status",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [650, 150],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "model": "gemini-flash",
+        "messages": {
+          "values": [
+            {
+              "content": "Customer {{$json.body.customerName}} (ticket #{{$json.body.ticketNumber}}) has been called at barbershop. Draft a short, friendly SMS reminding them their turn is now. Keep it under 160 characters."
+            }
+          ]
+        },
+        "options": {
+          "temperature": 0.5
+        }
+      },
+      "name": "Draft Notification",
+      "type": "n8n-nodes-base.openAi",
+      "position": [850, 150],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "to": "={{$json.body.customerPhone}}",
+        "body": "={{$json.output}}",
+        "from": "={{$env.TWILIO_PHONE_NUMBER}}"
+      },
+      "name": "Send SMS",
+      "type": "n8n-nodes-base.twilio",
+      "position": [1050, 150],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "url": "https://api.cutqueue.app/api/webhooks/notifications",
+        "method": "POST",
+        "options": {},
+        "body": {
+          "userId": "={{$json.body.customerId}}",
+          "type": "QUEUE_YOUR_TURN",
+          "title": "Your turn!",
+          "message": "={{$json.output}}"
+        }
+      },
+      "name": "Push Notification",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [1250, 150],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "model": "gemini-flash",
+        "messages": {
+          "values": [
+            {
+              "content": "Queue updated at barbershop. Action: {{$json.body.action}}. Send a brief status update to the barber. Keep it professional."
+            }
+          ]
+        }
+      },
+      "name": "Draft Barber Update",
+      "type": "n8n-nodes-base.openAi",
+      "position": [650, 450],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "to": "={{$json.body.barberPhone}}",
+        "body": "={{$json.output}}",
+        "from": "={{$env.TWILIO_PHONE_NUMBER}}"
+      },
+      "name": "Notify Barber",
+      "type": "n8n-nodes-base.twilio",
+      "position": [850, 450],
+      "typeVersion": 1
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [[{ "node": "Is Call Action?", "type": "main", "index": 0 }]]
+    },
+    "Is Call Action?": {
+      "main": [
+        [{ "node": "Get Queue Status", "type": "main", "index": 0 }],
+        [{ "node": "Draft Barber Update", "type": "main", "index": 0 }]
+      ]
+    },
+    "Get Queue Status": {
+      "main": [[{ "node": "Draft Notification", "type": "main", "index": 0 }]]
+    },
+    "Draft Notification": {
+      "main": [[{ "node": "Send SMS", "type": "main", "index": 0 }]]
+    },
+    "Send SMS": {
+      "main": [[{ "node": "Push Notification", "type": "main", "index": 0 }]]
+    },
+    "Draft Barber Update": {
+      "main": [[{ "node": "Notify Barber", "type": "main", "index": 0 }]]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
+}
