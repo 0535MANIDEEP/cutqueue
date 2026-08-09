@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import { GeistSans } from 'geist/font/sans'
 import { GeistMono } from 'geist/font/mono'
+import { Providers } from '@/components/providers'
 import { Header } from '@/components/layout/header'
 import { Footer } from '@/components/layout/footer'
 import './globals.css'
@@ -34,9 +35,11 @@ export default function RootLayout({
   return (
     <html lang="en" className={GeistSans.variable}>
       <body className={`${GeistSans.className} ${GeistMono.className} min-h-screen bg-[#0A0F0D] text-[#EFE9DA] antialiased`}>
-        <Header />
-        <main className="flex-1">{children}</main>
-        <Footer />
+        <Providers>
+          <Header />
+          <main className="flex-1">{children}</main>
+          <Footer />
+        </Providers>
       </body>
     </html>
   )

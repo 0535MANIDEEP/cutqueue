@@ -1,16 +1,20 @@
 'use client'
 
 import Link from 'next/link'
+import { useSession, signOut } from 'next-auth/react'
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 
 const navLinks = [
   { href: '/#features', label: 'Features' },
   { href: '/#pricing', label: 'Pricing' },
+  { href: '/book', label: 'Book' },
+  { href: '/portfolio', label: 'Portfolio' },
   { href: '/queue', label: 'Live Queue' },
 ]
 
 export function Header() {
+  const { data: session } = useSession()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
 
   return (
@@ -54,16 +58,31 @@ export function Header() {
 
           {/* Desktop Actions */}
           <div className="hidden md:flex items-center gap-3">
-            <Link href="/auth/signin">
-              <Button variant="ghost" size="sm">
-                Sign In
-              </Button>
-            </Link>
-            <Link href="/auth/signup">
-              <Button variant="primary" size="sm">
-                Get Started
-              </Button>
-            </Link>
+            {session ? (
+              <>
+                <Link href="/dashboard">
+                  <Button variant="ghost" size="sm">
+                    Dashboard
+                  </Button>
+                </Link>
+                <Button variant="outline" size="sm" onClick={() => signOut({ callbackUrl: "/" })}>
+                  Sign Out
+                </Button>
+              </>
+            ) : (
+              <>
+                <Link href="/auth/signin">
+                  <Button variant="ghost" size="sm">
+                    Sign In
+                  </Button>
+                </Link>
+                <Link href="/auth/signup">
+                  <Button variant="primary" size="sm">
+                    Get Started
+                  </Button>
+                </Link>
+              </>
+            )}
           </div>
 
           {/* Mobile Menu Button */}
@@ -111,16 +130,31 @@ export function Header() {
                 </Link>
               ))}
               <div className="flex gap-2 mt-2 pt-2 border-t border-[#2A3F3A]/50">
-                <Link href="/auth/signin" className="flex-1">
-                  <Button variant="outline" size="sm" className="w-full">
-                    Sign In
-                  </Button>
-                </Link>
-                <Link href="/auth/signup" className="flex-1">
-                  <Button variant="primary" size="sm" className="w-full">
-                    Get Started
-                  </Button>
-                </Link>
+                {session ? (
+                  <>
+                    <Link href="/dashboard" className="flex-1">
+                      <Button variant="outline" size="sm" className="w-full">
+                        Dashboard
+                      </Button>
+                    </Link>
+                    <Button variant="ghost" size="sm" className="flex-1" onClick={() => signOut({ callbackUrl: "/" })}>
+                      Sign Out
+                    </Button>
+                  </>
+                ) : (
+                  <>
+                    <Link href="/auth/signin" className="flex-1">
+                      <Button variant="outline" size="sm" className="w-full">
+                        Sign In
+                      </Button>
+                    </Link>
+                    <Link href="/auth/signup" className="flex-1">
+                      <Button variant="primary" size="sm" className="w-full">
+                        Get Started
+                      </Button>
+                    </Link>
+                  </>
+                )}
               </div>
             </nav>
           </div>
