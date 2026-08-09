@@ -1,6 +1,6 @@
 # dependencies
-/node_modules
-/.pnp
+node_modules/
+.pnp
 .pnp.*
 .yarn/*
 !.yarn/patches
@@ -9,18 +9,22 @@
 !.yarn/versions
 
 # testing
-/coverage
+coverage/
 
 # next.js
-/.next/
-/out/
+.next/
+out/
 
 # production
-/build
+build/
 
 # misc
 .DS_Store
 *.pem
+Thumbs.db
+*.swp
+*.swo
+*~
 
 # debug
 npm-debug.log*
@@ -42,25 +46,26 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-# prisma generated
-/src/generated/prisma
+# prisma
+src/generated/
+prisma/migrations/
 
 # IDE
-.vscode
-.idea
-*.swp
-*.swo
-*~
-
-# OS
-Thumbs.db
+.vscode/
+.idea/
 
 # AI tools
 .claude/
 .agents/
 .windsurf/
+.opencode/
 skills-lock.json
 
 # uploads
-/uploads
-/public/uploads
+uploads/
+public/uploads/
+
+# os
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
