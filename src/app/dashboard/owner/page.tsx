@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { cn } from "@/lib/utils"
+import { TrialBanner } from "@/components/trial-banner"
 
 interface QueueEntry {
   id: string
@@ -158,6 +159,8 @@ export default function OwnerDashboard() {
       </header>
 
       <main className="max-w-7xl mx-auto px-4 py-8">
+        <TrialBanner />
+        
         {/* Stats */}
         <div className="grid grid-cols-3 gap-4 mb-8">
           <Card>
