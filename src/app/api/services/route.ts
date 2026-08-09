@@ -9,13 +9,30 @@ export async function GET(req: Request) {
     const { searchParams } = new URL(req.url)
     const businessId = searchParams.get("businessId")
 
-    if (!businessId) {
-      return NextResponse.json({ error: "businessId required" }, { status: 400 })
+    if (businessId) {
+      const services = await prisma.service.findMany({
+        where: { businessId, isActive: true },
+        orderBy: { price: "asc" },
+      })
+      return NextResponse.json(services)
+    }
+
+    const session = await auth()
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    }
+
+    const business = await prisma.business.findFirst({
+      where: { ownerId: session.user.id },
+    })
+
+    if (!business) {
+      return NextResponse.json({ error: "Business not found" }, { status: 404 })
     }
 
     const services = await prisma.service.findMany({
-      where: { businessId, isActive: true },
-      orderBy: { price: "asc" },
+      where: { businessId: business.id },
+      orderBy: { createdAt: "desc" },
     })
 
     return NextResponse.json(services)

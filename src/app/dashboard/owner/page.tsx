@@ -30,6 +30,7 @@ interface QueueData {
 interface Service {
   id: string
   name: string
+  description: string | null
   duration: number
   price: number
   category: string
@@ -57,7 +58,9 @@ export default function OwnerDashboard() {
   const [shopName, setShopName] = useState("")
   const [loading, setLoading] = useState(true)
   const [showAddService, setShowAddService] = useState(false)
-  const [newService, setNewService] = useState({ name: "", duration: 30, price: 0, category: "general" })
+  const [editingService, setEditingService] = useState<string | null>(null)
+  const [editForm, setEditForm] = useState({ name: "", description: "", duration: 30, price: 0, category: "general" })
+  const [newService, setNewService] = useState({ name: "", description: "", duration: 30, price: 0, category: "general" })
 
   const fetchAll = async () => {
     try {
@@ -107,12 +110,61 @@ export default function OwnerDashboard() {
       })
       if (res.ok) {
         setShowAddService(false)
-        setNewService({ name: "", duration: 30, price: 0, category: "general" })
+        setNewService({ name: "", description: "", duration: 30, price: 0, category: "general" })
         fetchAll()
       }
     } catch (error) {
       console.error("Failed to add service:", error)
     }
+  }
+
+  const updateService = async (id: string) => {
+    try {
+      const res = await fetch(`/api/services/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(editForm),
+      })
+      if (res.ok) {
+        setEditingService(null)
+        fetchAll()
+      }
+    } catch (error) {
+      console.error("Failed to update service:", error)
+    }
+  }
+
+  const toggleService = async (id: string, isActive: boolean) => {
+    try {
+      await fetch(`/api/services/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ isActive: !isActive }),
+      })
+      fetchAll()
+    } catch (error) {
+      console.error("Failed to toggle service:", error)
+    }
+  }
+
+  const deleteService = async (id: string) => {
+    if (!confirm("Delete this service?")) return
+    try {
+      const res = await fetch(`/api/services/${id}`, { method: "DELETE" })
+      if (res.ok) {
+        fetchAll()
+      } else {
+        const data = await res.json()
+        alert(data.error || "Failed to delete")
+      }
+    } catch (error) {
+      console.error("Failed to delete service:", error)
+    }
+  }
+
+  const startEdit = (s: Service) => {
+    setEditingService(s.id)
+    setEditForm({ name: s.name, description: "", duration: s.duration, price: s.price, category: s.category })
   }
 
   if (status === "loading" || loading) {
@@ -313,8 +365,9 @@ export default function OwnerDashboard() {
         {/* Services Tab */}
         {tab === "services" && (
           <div className="space-y-4">
-            <div className="flex justify-end">
-              <Button variant="primary" onClick={() => setShowAddService(true)}>Add Service</Button>
+            <div className="flex items-center justify-between">
+              <h2 className="text-lg font-bold text-[#EFE9DA]">Service Catalogue</h2>
+              <Button variant="primary" onClick={() => setShowAddService(true)}>+ Add Service</Button>
             </div>
 
             {showAddService && (
@@ -323,61 +376,132 @@ export default function OwnerDashboard() {
                 <CardContent className="space-y-4">
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-sm text-[#EFE9DA]/60 mb-1">Name</label>
-                      <Input value={newService.name} onChange={(e) => setNewService({ ...newService, name: e.target.value })} />
+                      <label className="block text-sm text-[#EFE9DA]/60 mb-1">Name *</label>
+                      <Input value={newService.name} onChange={(e) => setNewService({ ...newService, name: e.target.value })} placeholder="Haircut" />
                     </div>
                     <div>
                       <label className="block text-sm text-[#EFE9DA]/60 mb-1">Category</label>
-                      <Input value={newService.category} onChange={(e) => setNewService({ ...newService, category: e.target.value })} />
+                      <Input value={newService.category} onChange={(e) => setNewService({ ...newService, category: e.target.value })} placeholder="haircut" />
                     </div>
                     <div>
-                      <label className="block text-sm text-[#EFE9DA]/60 mb-1">Duration (min)</label>
+                      <label className="block text-sm text-[#EFE9DA]/60 mb-1">Duration (min) *</label>
                       <Input type="number" value={newService.duration} onChange={(e) => setNewService({ ...newService, duration: parseInt(e.target.value) || 0 })} />
                     </div>
                     <div>
-                      <label className="block text-sm text-[#EFE9DA]/60 mb-1">Price ($)</label>
+                      <label className="block text-sm text-[#EFE9DA]/60 mb-1">Price ($) *</label>
                       <Input type="number" step="0.01" value={newService.price} onChange={(e) => setNewService({ ...newService, price: parseFloat(e.target.value) || 0 })} />
                     </div>
                   </div>
+                  <div>
+                    <label className="block text-sm text-[#EFE9DA]/60 mb-1">Description</label>
+                    <textarea
+                      value={newService.description}
+                      onChange={(e) => setNewService({ ...newService, description: e.target.value })}
+                      rows={2}
+                      placeholder="Optional description for your customers"
+                      className="w-full rounded-lg bg-[#0F1B17] border border-[#2A3F3A] px-4 py-3 text-[#EFE9DA] placeholder:text-[#EFE9DA]/40 focus:outline-none focus:ring-2 focus:ring-[#E8B547]/50 focus:border-[#E8B547] transition-all duration-200 resize-none"
+                    />
+                  </div>
                   <div className="flex gap-3">
-                    <Button variant="primary" onClick={addService}>Save</Button>
+                    <Button variant="primary" onClick={addService} disabled={!newService.name}>Save</Button>
                     <Button variant="outline" onClick={() => setShowAddService(false)}>Cancel</Button>
                   </div>
                 </CardContent>
               </Card>
             )}
 
-            <Card>
-              <CardContent className="p-0">
-                <table className="w-full">
-                  <thead>
-                    <tr className="border-b border-[#263329]">
-                      <th className="text-left px-4 py-3 text-xs font-medium text-[#EFE9DA]/60 uppercase">Service</th>
-                      <th className="text-left px-4 py-3 text-xs font-medium text-[#EFE9DA]/60 uppercase">Duration</th>
-                      <th className="text-left px-4 py-3 text-xs font-medium text-[#EFE9DA]/60 uppercase">Price</th>
-                      <th className="text-left px-4 py-3 text-xs font-medium text-[#EFE9DA]/60 uppercase">Status</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {services.map((s) => (
-                      <tr key={s.id} className="border-b border-[#263329]/50">
-                        <td className="px-4 py-3">
-                          <div className="text-sm font-medium text-[#EFE9DA]">{s.name}</div>
-                          <div className="text-xs text-[#EFE9DA]/50">{s.category}</div>
-                        </td>
-                        <td className="px-4 py-3 text-sm text-[#EFE9DA]/70">{s.duration} min</td>
-                        <td className="px-4 py-3 text-sm text-[#E8B547]">${s.price}</td>
-                        <td className="px-4 py-3">
-                          <span className={`px-2 py-1 rounded text-xs font-medium ${s.isActive ? "bg-green-500/10 text-green-400" : "bg-red-500/10 text-red-400"}`}>
-                            {s.isActive ? "Active" : "Inactive"}
-                          </span>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </CardContent>
-            </Card>
+            {services.length === 0 ? (
+              <Card>
+                <CardContent className="text-center py-12">
+                  <p className="text-[#EFE9DA]/40 text-sm mb-4">No services yet. Add your first service to get started.</p>
+                  <Button variant="primary" onClick={() => setShowAddService(true)}>+ Add Service</Button>
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="space-y-3">
+                {services.map((s) => (
+                  <Card key={s.id}>
+                    <CardContent className="p-4">
+                      {editingService === s.id ? (
+                        <div className="space-y-3">
+                          <div className="grid grid-cols-2 gap-3">
+                            <Input value={editForm.name} onChange={(e) => setEditForm({ ...editForm, name: e.target.value })} placeholder="Service name" />
+                            <Input value={editForm.category} onChange={(e) => setEditForm({ ...editForm, category: e.target.value })} placeholder="Category" />
+                            <Input type="number" value={editForm.duration} onChange={(e) => setEditForm({ ...editForm, duration: parseInt(e.target.value) || 0 })} />
+                            <Input type="number" step="0.01" value={editForm.price} onChange={(e) => setEditForm({ ...editForm, price: parseFloat(e.target.value) || 0 })} />
+                          </div>
+                          <textarea
+                            value={editForm.description}
+                            onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
+                            rows={2}
+                            placeholder="Description"
+                            className="w-full rounded-lg bg-[#0F1B17] border border-[#2A3F3A] px-4 py-3 text-[#EFE9DA] placeholder:text-[#EFE9DA]/40 focus:outline-none focus:ring-2 focus:ring-[#E8B547]/50 focus:border-[#E8B547] transition-all duration-200 resize-none"
+                          />
+                          <div className="flex gap-2">
+                            <Button size="sm" variant="primary" onClick={() => updateService(s.id)}>Save</Button>
+                            <Button size="sm" variant="outline" onClick={() => setEditingService(null)}>Cancel</Button>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="flex items-center justify-between">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-3">
+                              <h3 className="font-medium text-[#EFE9DA]">{s.name}</h3>
+                              <span className="px-2 py-0.5 rounded text-xs bg-[#263329] text-[#EFE9DA]/60">{s.category}</span>
+                              {!s.isActive && (
+                                <span className="px-2 py-0.5 rounded text-xs bg-red-500/10 text-red-400">Inactive</span>
+                              )}
+                            </div>
+                            {s.description && (
+                              <p className="text-xs text-[#EFE9DA]/40 mt-1">{s.description}</p>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-4">
+                            <div className="text-right">
+                              <div className="text-sm font-medium text-[#E8B547]">${s.price}</div>
+                              <div className="text-xs text-[#EFE9DA]/50">{s.duration} min</div>
+                            </div>
+                            <div className="flex gap-1">
+                              <button
+                                onClick={() => toggleService(s.id, s.isActive)}
+                                className={`p-1.5 rounded ${s.isActive ? "text-green-400 hover:bg-green-500/10" : "text-red-400 hover:bg-red-500/10"}`}
+                                title={s.isActive ? "Deactivate" : "Activate"}
+                              >
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  {s.isActive ? (
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                  ) : (
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v3m0 0v3m0-3h3m-3 0H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                  )}
+                                </svg>
+                              </button>
+                              <button
+                                onClick={() => startEdit(s)}
+                                className="p-1.5 rounded text-[#EFE9DA]/50 hover:text-[#EFE9DA] hover:bg-[#263329]"
+                                title="Edit"
+                              >
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                </svg>
+                              </button>
+                              <button
+                                onClick={() => deleteService(s.id)}
+                                className="p-1.5 rounded text-[#EFE9DA]/50 hover:text-red-400 hover:bg-red-500/10"
+                                title="Delete"
+                              >
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                </svg>
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
           </div>
         )}
 
