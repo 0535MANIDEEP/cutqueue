@@ -1,12 +1,18 @@
 import { NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
+import { staffScheduleSchema } from "@/lib/validation"
+import { logger } from "@/lib/logger"
 
 export async function GET() {
   try {
     const session = await auth()
-    if (!session?.user) {
+    if (!session?.user?.id) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    }
+
+    if (session.user.role !== "BUSINESS_OWNER" && session.user.role !== "ADMIN") {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 })
     }
 
     const business = await prisma.business.findUnique({
@@ -29,7 +35,7 @@ export async function GET() {
 
     return NextResponse.json(staff)
   } catch (error) {
-    console.error("Route error:", error)
+    logger.error("Staff schedule GET error", {}, error as Error)
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })
   }
 }
@@ -37,8 +43,12 @@ export async function GET() {
 export async function PATCH(req: Request) {
   try {
     const session = await auth()
-    if (!session?.user) {
+    if (!session?.user?.id) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    }
+
+    if (session.user.role !== "BUSINESS_OWNER" && session.user.role !== "ADMIN") {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 })
     }
 
     const business = await prisma.business.findUnique({
@@ -49,10 +59,20 @@ export async function PATCH(req: Request) {
       return NextResponse.json({ error: "Business not found" }, { status: 404 })
     }
 
-    const { staffId, isAvailable } = await req.json()
+    const body = await req.json()
+    const parsed = staffScheduleSchema.safeParse(body)
 
-    if (!staffId || typeof isAvailable !== "boolean") {
-      return NextResponse.json({ error: "staffId and isAvailable required" }, { status: 400 })
+    if (!parsed.success) {
+      return NextResponse.json(
+        { error: "Invalid input", details: parsed.error.flatten().fieldErrors },
+        { status: 400 }
+      )
+    }
+
+    const { staffId, isAvailable } = body
+
+    if (!staffId) {
+      return NextResponse.json({ error: "staffId required" }, { status: 400 })
     }
 
     const staff = await prisma.staff.findUnique({
@@ -65,7 +85,7 @@ export async function PATCH(req: Request) {
 
     const updated = await prisma.staff.update({
       where: { id: staffId },
-      data: { isAvailable },
+      data: { isAvailable: parsed.data.isAvailable },
       include: {
         user: {
           select: { id: true, name: true, email: true },
@@ -75,7 +95,7 @@ export async function PATCH(req: Request) {
 
     return NextResponse.json(updated)
   } catch (error) {
-    console.error("Route error:", error)
+    logger.error("Staff schedule PATCH error", {}, error as Error)
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })
   }
 }

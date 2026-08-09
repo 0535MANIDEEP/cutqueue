@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
+import { serviceSchema } from "@/lib/validation"
+import { logger } from "@/lib/logger"
 
 export async function GET(req: Request) {
   try {
@@ -18,7 +20,7 @@ export async function GET(req: Request) {
 
     return NextResponse.json(services)
   } catch (error) {
-    console.error("Route error:", error)
+    logger.error("Services GET error", {}, error as Error)
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })
   }
 }
@@ -26,8 +28,12 @@ export async function GET(req: Request) {
 export async function POST(req: Request) {
   try {
     const session = await auth()
-    if (!session?.user) {
+    if (!session?.user?.id) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    }
+
+    if (session.user.role !== "BUSINESS_OWNER" && session.user.role !== "ADMIN") {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 })
     }
 
     const business = await prisma.business.findUnique({
@@ -38,22 +44,32 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Business not found" }, { status: 404 })
     }
 
-    const { name, description, duration, price, category } = await req.json()
+    const body = await req.json()
+    const parsed = serviceSchema.safeParse(body)
+
+    if (!parsed.success) {
+      return NextResponse.json(
+        { error: "Invalid input", details: parsed.error.flatten().fieldErrors },
+        { status: 400 }
+      )
+    }
+
+    const { name, description, duration, price, category } = parsed.data
 
     const service = await prisma.service.create({
       data: {
         businessId: business.id,
         name,
         description,
-        duration: duration || 30,
-        price: price || 0,
-        category: category || "general",
+        duration,
+        price,
+        category,
       },
     })
 
     return NextResponse.json(service, { status: 201 })
   } catch (error) {
-    console.error("Route error:", error)
+    logger.error("Services POST error", {}, error as Error)
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })
   }
 }

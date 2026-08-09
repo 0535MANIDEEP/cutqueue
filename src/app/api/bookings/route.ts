@@ -2,6 +2,8 @@ import { NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { notifyBookingCreated, notifyBookingCancelled, notifyBookingCompleted, triggerN8NWebhook } from "@/lib/notify"
+import { bookingSchema } from "@/lib/validation"
+import { logger } from "@/lib/logger"
 
 export async function GET(req: Request) {
   try {
@@ -78,7 +80,7 @@ export async function GET(req: Request) {
 
     return NextResponse.json(bookings)
   } catch (error) {
-    console.error("Bookings GET error:", error)
+    logger.error("Bookings GET error", {}, error as Error)
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })
   }
 }
@@ -90,14 +92,17 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    const { staffId, serviceId, businessId, scheduledAt, notes } = await req.json()
+    const body = await req.json()
+    const parsed = bookingSchema.safeParse(body)
 
-    if (!staffId || !serviceId || !businessId || !scheduledAt) {
+    if (!parsed.success) {
       return NextResponse.json(
-        { error: "Missing required fields" },
+        { error: "Invalid input", details: parsed.error.flatten().fieldErrors },
         { status: 400 }
       )
     }
+
+    const { staffId, serviceId, businessId, scheduledAt, notes } = parsed.data
 
     const service = await prisma.service.findUnique({
       where: { id: serviceId },
@@ -107,36 +112,35 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Service not found" }, { status: 404 })
     }
 
-    const existingBooking = await prisma.booking.findFirst({
-      where: {
-        staffId,
-        scheduledAt: new Date(scheduledAt),
-        status: { in: ["PENDING", "CONFIRMED"] },
-      },
-    })
+    const booking = await prisma.$transaction(async (tx) => {
+      const existingBooking = await tx.booking.findFirst({
+        where: {
+          staffId,
+          scheduledAt: new Date(scheduledAt),
+          status: { in: ["PENDING", "CONFIRMED"] },
+        },
+      })
 
-    if (existingBooking) {
-      return NextResponse.json(
-        { error: "Time slot already booked" },
-        { status: 400 }
-      )
-    }
+      if (existingBooking) {
+        throw new Error("CONFLICT")
+      }
 
-    const booking = await prisma.booking.create({
-      data: {
-        customerId: session.user.id,
-        staffId,
-        serviceId,
-        businessId,
-        scheduledAt: new Date(scheduledAt),
-        duration: service.duration,
-        notes,
-        status: "PENDING",
-      },
-      include: {
-        service: { select: { name: true } },
-        business: { select: { name: true } },
-      },
+      return tx.booking.create({
+        data: {
+          customerId: session.user!.id,
+          staffId,
+          serviceId,
+          businessId,
+          scheduledAt: new Date(scheduledAt),
+          duration: service.duration,
+          notes,
+          status: "PENDING",
+        },
+        include: {
+          service: { select: { name: true } },
+          business: { select: { name: true } },
+        },
+      })
     })
 
     await notifyBookingCreated(booking)
@@ -144,7 +148,13 @@ export async function POST(req: Request) {
 
     return NextResponse.json(booking, { status: 201 })
   } catch (error) {
-    console.error("Bookings POST error:", error)
+    if ((error as Error).message === "CONFLICT") {
+      return NextResponse.json(
+        { error: "Time slot already booked" },
+        { status: 409 }
+      )
+    }
+    logger.error("Bookings POST error", {}, error as Error)
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })
   }
 }

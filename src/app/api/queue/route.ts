@@ -2,6 +2,8 @@ import { NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { notifyQueueJoined, notifyQueueCalled, triggerN8NWebhook } from "@/lib/notify"
+import { queueJoinSchema } from "@/lib/validation"
+import { logger } from "@/lib/logger"
 
 export async function GET(req: Request) {
   try {
@@ -48,7 +50,7 @@ export async function GET(req: Request) {
       estimatedWait,
     })
   } catch (error) {
-    console.error("Queue GET error:", error)
+    logger.error("Queue GET error", {}, error as Error)
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })
   }
 }
@@ -60,11 +62,17 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    const { businessId, serviceType } = await req.json()
+    const body = await req.json()
+    const parsed = queueJoinSchema.safeParse(body)
 
-    if (!businessId) {
-      return NextResponse.json({ error: "businessId required" }, { status: 400 })
+    if (!parsed.success) {
+      return NextResponse.json(
+        { error: "Invalid input", details: parsed.error.flatten().fieldErrors },
+        { status: 400 }
+      )
     }
+
+    const { businessId, serviceType } = parsed.data
 
     const business = await prisma.business.findUnique({
       where: { id: businessId },
@@ -104,22 +112,39 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Already in queue" }, { status: 400 })
     }
 
-    const lastEntry = await prisma.queueEntry.findFirst({
-      where: { queueId: queue.id },
-      orderBy: { ticketNumber: "desc" },
-    })
+    let entry
+    const maxRetries = 5
 
-    const ticketNumber = (lastEntry?.ticketNumber ?? 1000) + 1
+    for (let attempt = 0; attempt < maxRetries; attempt++) {
+      try {
+        const lastEntry = await prisma.queueEntry.findFirst({
+          where: { queueId: queue.id },
+          orderBy: { ticketNumber: "desc" },
+        })
 
-    const entry = await prisma.queueEntry.create({
-      data: {
-        queueId: queue.id,
-        customerId: session.user.id,
-        serviceType: serviceType || "General",
-        ticketNumber,
-        status: "WAITING",
-      },
-    })
+        const ticketNumber = (lastEntry?.ticketNumber ?? 1000) + 1
+
+        entry = await prisma.queueEntry.create({
+          data: {
+            queueId: queue.id,
+            customerId: session.user.id,
+            serviceType: serviceType || "General",
+            ticketNumber,
+            status: "WAITING",
+          },
+        })
+        break
+      } catch (error) {
+        if (attempt === maxRetries - 1) {
+          throw error
+        }
+        await new Promise((resolve) => setTimeout(resolve, 50 * (attempt + 1)))
+      }
+    }
+
+    if (!entry) {
+      return NextResponse.json({ error: "Failed to join queue" }, { status: 500 })
+    }
 
     const waitingCount = await prisma.queueEntry.count({
       where: { queueId: queue.id, status: "WAITING" },
@@ -141,7 +166,7 @@ export async function POST(req: Request) {
 
     return NextResponse.json(entry, { status: 201 })
   } catch (error) {
-    console.error("Queue POST error:", error)
+    logger.error("Queue POST error", {}, error as Error)
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })
   }
 }

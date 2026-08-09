@@ -35,16 +35,23 @@ const RATE_LIMITS: Record<string, { limit: number; windowMs: number }> = {
   "/api/auth/callback": { limit: 10, windowMs: 60000 },
   "/api/bookings": { limit: 30, windowMs: 60000 },
   "/api/queue": { limit: 20, windowMs: 60000 },
+  "/api/queue/join": { limit: 10, windowMs: 60000 },
+  "/api/queue/": { limit: 30, windowMs: 60000 },
   "/api/reviews": { limit: 10, windowMs: 60000 },
   "/api/complaints": { limit: 10, windowMs: 60000 },
   "/api/notifications": { limit: 30, windowMs: 60000 },
   "/api/services": { limit: 30, windowMs: 60000 },
   "/api/portfolio": { limit: 20, windowMs: 60000 },
   "/api/admin": { limit: 60, windowMs: 60000 },
+  "/api/business/settings": { limit: 20, windowMs: 60000 },
+  "/api/staff/schedule": { limit: 20, windowMs: 60000 },
+  "/api/onboarding": { limit: 5, windowMs: 60000 },
+  "/api/trial": { limit: 30, windowMs: 60000 },
 }
 
 function getRateLimitForPath(pathname: string): { limit: number; windowMs: number } | null {
-  for (const [pattern, config] of Object.entries(RATE_LIMITS)) {
+  const sorted = Object.entries(RATE_LIMITS).sort((a, b) => b[0].length - a[0].length)
+  for (const [pattern, config] of sorted) {
     if (pathname.startsWith(pattern)) {
       return config
     }
@@ -52,10 +59,27 @@ function getRateLimitForPath(pathname: string): { limit: number; windowMs: numbe
   return null
 }
 
+function addSecurityHeaders(response: NextResponse): NextResponse {
+  response.headers.set("X-Content-Type-Options", "nosniff")
+  response.headers.set("X-Frame-Options", "DENY")
+  response.headers.set("X-XSS-Protection", "1; mode=block")
+  response.headers.set("Referrer-Policy", "strict-origin-when-cross-origin")
+  response.headers.set("Permissions-Policy", "camera=(), microphone=(), geolocation=()")
+  response.headers.set(
+    "Strict-Transport-Security",
+    "max-age=31536000; includeSubDomains; preload"
+  )
+  return response
+}
+
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
 
   if (pathname.startsWith("/api/")) {
+    if (pathname === "/api/health") {
+      return addSecurityHeaders(NextResponse.next())
+    }
+
     const rateLimitConfig = getRateLimitForPath(pathname)
 
     if (rateLimitConfig) {
@@ -67,7 +91,7 @@ export function middleware(request: NextRequest) {
       )
 
       if (!success) {
-        return NextResponse.json(
+        const response = NextResponse.json(
           { error: "Too many requests. Please try again later." },
           {
             status: 429,
@@ -78,16 +102,17 @@ export function middleware(request: NextRequest) {
             },
           }
         )
+        return addSecurityHeaders(response)
       }
 
       const response = NextResponse.next()
       response.headers.set("X-RateLimit-Limit", String(rateLimitConfig.limit))
       response.headers.set("X-RateLimit-Remaining", String(remaining))
-      return response
+      return addSecurityHeaders(response)
     }
   }
 
-  return NextResponse.next()
+  return addSecurityHeaders(NextResponse.next())
 }
 
 export const config = {
