@@ -57,6 +57,19 @@ export async function PATCH(req: Request) {
       }
     }
 
+    if (data.credentials) {
+      const currentSettings = (business.settings as Record<string, unknown>) || {}
+      const currentCredentials = (currentSettings.credentials as Record<string, unknown>) || {}
+
+      updateData.settings = {
+        ...currentSettings,
+        credentials: {
+          ...currentCredentials,
+          ...data.credentials,
+        },
+      }
+    }
+
     const updated = await prisma.business.update({
       where: { id: business.id },
       data: updateData,

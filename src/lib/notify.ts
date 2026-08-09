@@ -1,5 +1,6 @@
 import { prisma } from "./prisma"
 import { Prisma } from "../generated/prisma/client"
+import { getBusinessCredentials, hasTwilioCredentials, hasResendCredentials } from "./business-credentials"
 
 interface NotifyParams {
   userId: string
@@ -22,6 +23,69 @@ export async function createNotification(params: NotifyParams): Promise<void> {
     })
   } catch (error) {
     console.error("Failed to create notification:", error)
+  }
+}
+
+export async function sendSMS(to: string, message: string, businessId: string): Promise<boolean> {
+  const creds = await getBusinessCredentials(businessId)
+
+  if (!hasTwilioCredentials(creds) || !creds.twilio) {
+    console.log("Twilio not configured for business, skipping SMS")
+    return false
+  }
+
+  try {
+    const { accountSid, authToken, phoneNumber } = creds.twilio
+    const url = `https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Messages.json`
+
+    const body = new URLSearchParams()
+    body.append("To", to)
+    body.append("From", phoneNumber)
+    body.append("Body", message)
+
+    const response = await fetch(url, {
+      method: "POST",
+      headers: {
+        Authorization: `Basic ${Buffer.from(`${accountSid}:${authToken}`).toString("base64")}`,
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      body: body.toString(),
+    })
+
+    return response.ok
+  } catch (error) {
+    console.error("Failed to send SMS:", error)
+    return false
+  }
+}
+
+export async function sendEmail(to: string, subject: string, html: string, businessId: string): Promise<boolean> {
+  const creds = await getBusinessCredentials(businessId)
+
+  if (!hasResendCredentials(creds) || !creds.resend) {
+    console.log("Resend not configured for business, skipping email")
+    return false
+  }
+
+  try {
+    const response = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${creds.resend.apiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        from: "QueueForge <notifications@queueforge.app>",
+        to: [to],
+        subject,
+        html,
+      }),
+    })
+
+    return response.ok
+  } catch (error) {
+    console.error("Failed to send email:", error)
+    return false
   }
 }
 
@@ -55,6 +119,28 @@ export async function notifyBookingCreated(booking: {
     message: `Your ${booking.service.name} at ${booking.business.name} is confirmed for ${booking.scheduledAt.toLocaleDateString()} at ${booking.scheduledAt.toLocaleTimeString()}`,
     data: { bookingId: booking.id },
   })
+
+  const customer = await prisma.user.findUnique({
+    where: { id: booking.customerId },
+    select: { phone: true, email: true },
+  })
+
+  if (customer?.phone) {
+    await sendSMS(
+      customer.phone,
+      `Booking confirmed! ${booking.service.name} at ${booking.business.name} on ${booking.scheduledAt.toLocaleDateString()} at ${booking.scheduledAt.toLocaleTimeString()}`,
+      booking.businessId
+    )
+  }
+
+  if (customer?.email) {
+    await sendEmail(
+      customer.email,
+      `Booking Confirmed - ${booking.business.name}`,
+      `<h2>Booking Confirmed</h2><p>Your ${booking.service.name} at ${booking.business.name} is confirmed for ${booking.scheduledAt.toLocaleDateString()} at ${booking.scheduledAt.toLocaleTimeString()}.</p>`,
+      booking.businessId
+    )
+  }
 }
 
 export async function notifyBookingCancelled(booking: {
@@ -87,6 +173,19 @@ export async function notifyBookingCancelled(booking: {
     message: `Your ${booking.service.name} at ${booking.business.name} on ${booking.scheduledAt.toLocaleDateString()} has been cancelled`,
     data: { bookingId: booking.id },
   })
+
+  const customer = await prisma.user.findUnique({
+    where: { id: booking.customerId },
+    select: { phone: true },
+  })
+
+  if (customer?.phone) {
+    await sendSMS(
+      customer.phone,
+      `Booking cancelled: ${booking.service.name} at ${booking.business.name} on ${booking.scheduledAt.toLocaleDateString()}`,
+      booking.businessId
+    )
+  }
 }
 
 export async function notifyBookingCompleted(booking: {
@@ -103,6 +202,28 @@ export async function notifyBookingCompleted(booking: {
     message: `Your ${booking.service.name} at ${booking.business.name} is complete. Leave a review!`,
     data: { bookingId: booking.id },
   })
+
+  const customer = await prisma.user.findUnique({
+    where: { id: booking.customerId },
+    select: { phone: true, email: true },
+  })
+
+  if (customer?.phone) {
+    await sendSMS(
+      customer.phone,
+      `Thanks for visiting ${booking.business.name}! Your ${booking.service.name} is complete. Leave us a review!`,
+      booking.businessId
+    )
+  }
+
+  if (customer?.email) {
+    await sendEmail(
+      customer.email,
+      `Thanks for visiting ${booking.business.name}!`,
+      `<h2>Service Complete</h2><p>Your ${booking.service.name} at ${booking.business.name} is complete.</p><p>We'd love your feedback!</p>`,
+      booking.businessId
+    )
+  }
 }
 
 export async function notifyQueueJoined(entry: {
@@ -133,6 +254,24 @@ export async function notifyQueueCalled(entry: {
     message: `Ticket #${entry.ticketNumber} — please come to the counter now!`,
     data: { entryId: entry.id },
   })
+
+  const user = await prisma.user.findUnique({
+    where: { id: entry.userId },
+    select: { phone: true },
+  })
+
+  const queueEntry = await prisma.queueEntry.findUnique({
+    where: { id: entry.id },
+    select: { queue: { select: { businessId: true } } },
+  })
+
+  if (user?.phone && queueEntry) {
+    await sendSMS(
+      user.phone,
+      `Ticket #${entry.ticketNumber} — please come to the counter now!`,
+      queueEntry.queue.businessId
+    )
+  }
 }
 
 export async function notifyComplaintCreated(complaint: {
@@ -201,7 +340,7 @@ export async function notifyAnnouncement(businessId: string, title: string, cont
   )
 }
 
-export async function triggerN8NWebhook(event: string, data: Record<string, unknown>): Promise<void> {
+export async function triggerN8NWebhook(event: string, data: Record<string, string>): Promise<void> {
   const webhookUrl = process.env.N8N_WEBHOOK_URL
   if (!webhookUrl) return
 

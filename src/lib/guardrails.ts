@@ -126,3 +126,35 @@ export function isGeminiConfigured(): boolean {
 export function isN8NConfigured(): boolean {
   return checkN8N().status === "configured"
 }
+
+export async function getBusinessServiceChecks(businessId: string): Promise<ServiceCheck[]> {
+  const { getBusinessCredentials, hasTwilioCredentials, hasResendCredentials, hasStripeCredentials } = await import("./business-credentials")
+  const creds = await getBusinessCredentials(businessId)
+
+  return [
+    {
+      name: "Twilio SMS",
+      status: hasTwilioCredentials(creds) ? "configured" : "missing",
+      message: hasTwilioCredentials(creds)
+        ? "Twilio SMS is ready (using your credentials)"
+        : "Twilio SMS not configured. SMS notifications disabled. Configure in Settings → SMS Notifications.",
+      required: false,
+    },
+    {
+      name: "Email (Resend)",
+      status: hasResendCredentials(creds) ? "configured" : "missing",
+      message: hasResendCredentials(creds)
+        ? "Email service is ready (using your credentials)"
+        : "Email service not configured. Email notifications disabled. Configure in Settings → Email Notifications.",
+      required: false,
+    },
+    {
+      name: "Stripe Payments",
+      status: hasStripeCredentials(creds) ? "configured" : "missing",
+      message: hasStripeCredentials(creds)
+        ? "Stripe is ready for payments (using your credentials)"
+        : "Stripe not configured. Payments disabled. Configure in Settings → Payments.",
+      required: false,
+    },
+  ]
+}

@@ -135,7 +135,7 @@ export async function POST(req: Request) {
 
     await triggerN8NWebhook("queue.joined", {
       queueId: queue.id,
-      ticketNumber: entry.ticketNumber,
+      ticketNumber: String(entry.ticketNumber),
       businessId,
     })
 

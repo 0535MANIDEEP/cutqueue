@@ -44,6 +44,13 @@ export default function OwnerSettingsPage() {
   const [address, setAddress] = useState("")
   const [openingHours, setOpeningHours] = useState<OpeningHours>(DEFAULT_HOURS)
 
+  const [twilioSid, setTwilioSid] = useState("")
+  const [twilioToken, setTwilioToken] = useState("")
+  const [twilioPhone, setTwilioPhone] = useState("")
+  const [resendKey, setResendKey] = useState("")
+  const [stripeSecret, setStripeSecret] = useState("")
+  const [stripePublic, setStripePublic] = useState("")
+
   const fetchBusiness = async () => {
     try {
       const res = await fetch("/api/business/settings")
@@ -56,6 +63,20 @@ export default function OwnerSettingsPage() {
         setAddress(data.address || "")
         if (data.openingHours && typeof data.openingHours === "object") {
           setOpeningHours({ ...DEFAULT_HOURS, ...data.openingHours })
+        }
+        const settings = data.settings as Record<string, unknown> | null
+        const creds = settings?.credentials as Record<string, Record<string, string>> | undefined
+        if (creds?.twilio) {
+          setTwilioSid(creds.twilio.accountSid || "")
+          setTwilioToken(creds.twilio.authToken || "")
+          setTwilioPhone(creds.twilio.phoneNumber || "")
+        }
+        if (creds?.resend) {
+          setResendKey(creds.resend.apiKey || "")
+        }
+        if (creds?.stripe) {
+          setStripeSecret(creds.stripe.secretKey || "")
+          setStripePublic(creds.stripe.publishableKey || "")
         }
       }
     } catch {
@@ -72,7 +93,14 @@ export default function OwnerSettingsPage() {
       const res = await fetch("/api/business/settings", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, description, phone, email, address, openingHours }),
+        body: JSON.stringify({
+          name, description, phone, email, address, openingHours,
+          credentials: {
+            twilio: twilioSid ? { accountSid: twilioSid, authToken: twilioToken, phoneNumber: twilioPhone } : null,
+            resend: resendKey ? { apiKey: resendKey } : null,
+            stripe: stripeSecret ? { secretKey: stripeSecret, publishableKey: stripePublic } : null,
+          },
+        }),
       })
       if (res.ok) {
         setMessage({ type: "success", text: "Settings saved successfully" })
@@ -219,6 +247,70 @@ export default function OwnerSettingsPage() {
                   </div>
                 )
               })}
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>SMS Notifications (Twilio)</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <p className="text-xs text-[#EFE9DA]/40">
+              Configure your own Twilio account to send booking confirmations and queue alerts via SMS.
+              <a href="https://www.twilio.com/console" target="_blank" rel="noopener noreferrer" className="text-[#E8B547] hover:underline ml-1">Get credentials</a>
+            </p>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm text-[#EFE9DA]/60 mb-1">Account SID</label>
+                <Input value={twilioSid} onChange={(e) => setTwilioSid(e.target.value)} placeholder="AC..." />
+              </div>
+              <div>
+                <label className="block text-sm text-[#EFE9DA]/60 mb-1">Auth Token</label>
+                <Input type="password" value={twilioToken} onChange={(e) => setTwilioToken(e.target.value)} placeholder="Your auth token" />
+              </div>
+            </div>
+            <div className="w-48">
+              <label className="block text-sm text-[#EFE9DA]/60 mb-1">Phone Number</label>
+              <Input value={twilioPhone} onChange={(e) => setTwilioPhone(e.target.value)} placeholder="+1234567890" />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Email Notifications (Resend)</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <p className="text-xs text-[#EFE9DA]/40">
+              Configure your own Resend account to send booking emails.
+              <a href="https://resend.com/api-keys" target="_blank" rel="noopener noreferrer" className="text-[#E8B547] hover:underline ml-1">Get API key</a>
+            </p>
+            <div className="w-96">
+              <label className="block text-sm text-[#EFE9DA]/60 mb-1">API Key</label>
+              <Input type="password" value={resendKey} onChange={(e) => setResendKey(e.target.value)} placeholder="re_..." />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Payments (Stripe)</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <p className="text-xs text-[#EFE9DA]/40">
+              Configure your own Stripe account to collect payments. You receive money directly.
+              <a href="https://dashboard.stripe.com/apikeys" target="_blank" rel="noopener noreferrer" className="text-[#E8B547] hover:underline ml-1">Get API keys</a>
+            </p>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm text-[#EFE9DA]/60 mb-1">Secret Key</label>
+                <Input type="password" value={stripeSecret} onChange={(e) => setStripeSecret(e.target.value)} placeholder="sk_..." />
+              </div>
+              <div>
+                <label className="block text-sm text-[#EFE9DA]/60 mb-1">Publishable Key</label>
+                <Input value={stripePublic} onChange={(e) => setStripePublic(e.target.value)} placeholder="pk_..." />
+              </div>
             </div>
           </CardContent>
         </Card>

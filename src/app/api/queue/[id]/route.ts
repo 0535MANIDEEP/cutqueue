@@ -41,7 +41,7 @@ export async function PATCH(
         })
         await triggerN8NWebhook("queue.called", {
           queueId: entry.queueId,
-          ticketNumber: entry.ticketNumber,
+          ticketNumber: String(entry.ticketNumber),
           businessId: entry.queue.businessId,
         })
         break
@@ -62,7 +62,7 @@ export async function PATCH(
         })
         await triggerN8NWebhook("queue.completed", {
           queueId: entry.queueId,
-          ticketNumber: entry.ticketNumber,
+          ticketNumber: String(entry.ticketNumber),
           businessId: entry.queue.businessId,
         })
         break
