@@ -2,9 +2,13 @@ import { NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 
+const validCategories = ["SERVICE_QUALITY", "WAIT_TIME", "STAFF_BEHAVIOR", "PRICING", "CLEANLINESS", "OTHER"]
+const validStatuses = ["OPEN", "IN_PROGRESS", "RESOLVED", "DISMISSED"]
+const validPriorities = ["LOW", "NORMAL", "HIGH", "URGENT"]
+
 export async function GET(req: Request) {
   const session = await auth()
-  if (!session?.user) {
+  if (!session?.user?.id) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
 
@@ -17,12 +21,12 @@ export async function GET(req: Request) {
     if (businessId) where.businessId = businessId
   } else if (session.user.role === "BUSINESS_OWNER") {
     const business = await prisma.business.findFirst({
-      where: { ownerId: session.user.id! },
+      where: { ownerId: session.user.id },
     })
     if (business) where.businessId = business.id
     else return NextResponse.json([])
   } else {
-    where.customerId = session.user.id!
+    where.customerId = session.user.id
   }
 
   const complaints = await prisma.complaint.findMany({
@@ -40,7 +44,7 @@ export async function GET(req: Request) {
 
 export async function POST(req: Request) {
   const session = await auth()
-  if (!session?.user) {
+  if (!session?.user?.id) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
 
@@ -50,12 +54,21 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Missing required fields" }, { status: 400 })
   }
 
+  if (!validCategories.includes(category)) {
+    return NextResponse.json({ error: "Invalid category" }, { status: 400 })
+  }
+
+  const business = await prisma.business.findUnique({ where: { id: businessId } })
+  if (!business) {
+    return NextResponse.json({ error: "Business not found" }, { status: 404 })
+  }
+
   const complaint = await prisma.complaint.create({
     data: {
-      customerId: session.user.id!,
+      customerId: session.user.id,
       businessId,
       bookingId,
-      category,
+      category: category as "SERVICE_QUALITY" | "WAIT_TIME" | "STAFF_BEHAVIOR" | "PRICING" | "CLEANLINESS" | "OTHER",
       subject,
       description,
       status: "OPEN",
@@ -68,7 +81,7 @@ export async function POST(req: Request) {
 
 export async function PATCH(req: Request) {
   const session = await auth()
-  if (!session?.user) {
+  if (!session?.user?.id) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
 
@@ -90,13 +103,32 @@ export async function PATCH(req: Request) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 })
   }
 
+  if (session.user.role === "BUSINESS_OWNER") {
+    const business = await prisma.business.findFirst({
+      where: { ownerId: session.user.id },
+    })
+    if (business?.id !== complaint.businessId) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 })
+    }
+  }
+
   const updateData: Record<string, unknown> = {}
-  if (status) updateData.status = status
+  if (status) {
+    if (!validStatuses.includes(status)) {
+      return NextResponse.json({ error: "Invalid status" }, { status: 400 })
+    }
+    updateData.status = status
+  }
   if (response) {
     updateData.response = response
     updateData.respondedAt = new Date()
   }
-  if (priority) updateData.priority = priority
+  if (priority) {
+    if (!validPriorities.includes(priority)) {
+      return NextResponse.json({ error: "Invalid priority" }, { status: 400 })
+    }
+    updateData.priority = priority
+  }
   if (status === "RESOLVED") updateData.resolvedAt = new Date()
 
   const updated = await prisma.complaint.update({

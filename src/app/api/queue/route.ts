@@ -14,8 +14,13 @@ export async function GET(req: Request) {
     where: { businessId },
     include: {
       entries: {
-        include: {
-          customer: { select: { name: true, phone: true } },
+        select: {
+          id: true,
+          ticketNumber: true,
+          status: true,
+          serviceType: true,
+          joinedAt: true,
+          customer: { select: { name: true } },
         },
         orderBy: { ticketNumber: "asc" },
       },
@@ -35,7 +40,7 @@ export async function GET(req: Request) {
   const estimatedWait = waitingCount * 20
 
   return NextResponse.json({
-    queue,
+    queue: { id: queue.id, isActive: queue.isActive },
     entries: queue.entries,
     waitingCount,
     estimatedWait,
@@ -44,14 +49,22 @@ export async function GET(req: Request) {
 
 export async function POST(req: Request) {
   const session = await auth()
-  if (!session?.user) {
+  if (!session?.user?.id) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
 
-  const { businessId, serviceId } = await req.json()
+  const { businessId, serviceType } = await req.json()
 
   if (!businessId) {
     return NextResponse.json({ error: "businessId required" }, { status: 400 })
+  }
+
+  const business = await prisma.business.findUnique({
+    where: { id: businessId },
+  })
+
+  if (!business) {
+    return NextResponse.json({ error: "Business not found" }, { status: 404 })
   }
 
   let queue = await prisma.queue.findFirst({
@@ -75,7 +88,7 @@ export async function POST(req: Request) {
   const existingEntry = await prisma.queueEntry.findFirst({
     where: {
       queueId: queue.id,
-      customerId: session.user.id!,
+      customerId: session.user.id,
       status: { in: ["WAITING", "CALLED", "IN_PROGRESS"] },
     },
   })
@@ -94,8 +107,8 @@ export async function POST(req: Request) {
   const entry = await prisma.queueEntry.create({
     data: {
       queueId: queue.id,
-      customerId: session.user.id!,
-      serviceType: serviceId || "General",
+      customerId: session.user.id,
+      serviceType: serviceType || "General",
       ticketNumber,
       status: "WAITING",
     },

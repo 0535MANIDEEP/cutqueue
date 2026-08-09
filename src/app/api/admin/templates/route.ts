@@ -50,15 +50,29 @@ export async function PATCH(req: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 403 })
   }
 
-  const { id, ...data } = await req.json()
+  const { id, slug, name, description, category, icon, queueType, features, defaultServices } = await req.json()
 
   if (!id) {
     return NextResponse.json({ error: "Template ID required" }, { status: 400 })
   }
 
+  const existing = await prisma.industryTemplate.findUnique({ where: { id } })
+  if (!existing) {
+    return NextResponse.json({ error: "Template not found" }, { status: 404 })
+  }
+
   const template = await prisma.industryTemplate.update({
     where: { id },
-    data,
+    data: {
+      ...(slug !== undefined && { slug }),
+      ...(name !== undefined && { name }),
+      ...(description !== undefined && { description }),
+      ...(category !== undefined && { category }),
+      ...(icon !== undefined && { icon }),
+      ...(queueType !== undefined && { queueType }),
+      ...(features !== undefined && { features }),
+      ...(defaultServices !== undefined && { defaultServices }),
+    },
   })
 
   return NextResponse.json(template)
@@ -74,6 +88,11 @@ export async function DELETE(req: Request) {
 
   if (!id) {
     return NextResponse.json({ error: "Template ID required" }, { status: 400 })
+  }
+
+  const existing = await prisma.industryTemplate.findUnique({ where: { id } })
+  if (!existing) {
+    return NextResponse.json({ error: "Template not found" }, { status: 404 })
   }
 
   await prisma.industryTemplate.delete({ where: { id } })

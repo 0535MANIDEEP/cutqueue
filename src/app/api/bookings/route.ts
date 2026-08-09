@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma"
 
 export async function GET(req: Request) {
   const session = await auth()
-  if (!session?.user) {
+  if (!session?.user?.id) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
 
@@ -27,7 +27,7 @@ export async function GET(req: Request) {
     })
   } else if (session.user.role === "BUSINESS_OWNER") {
     const business = await prisma.business.findFirst({
-      where: { ownerId: session.user.id! },
+      where: { ownerId: session.user.id },
     })
     if (business) {
       bookings = await prisma.booking.findMany({
@@ -45,7 +45,7 @@ export async function GET(req: Request) {
     }
   } else if (session.user.role === "STAFF") {
     const staff = await prisma.staff.findFirst({
-      where: { userId: session.user.id! },
+      where: { userId: session.user.id },
     })
     if (staff) {
       bookings = await prisma.booking.findMany({
@@ -63,7 +63,7 @@ export async function GET(req: Request) {
     }
   } else {
     bookings = await prisma.booking.findMany({
-      where: { customerId: session.user.id! },
+      where: { customerId: session.user.id },
       include: {
         staff: { include: { user: { select: { name: true, image: true } } } },
         service: true,
@@ -79,7 +79,7 @@ export async function GET(req: Request) {
 
 export async function POST(req: Request) {
   const session = await auth()
-  if (!session?.user) {
+  if (!session?.user?.id) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
 
@@ -117,7 +117,7 @@ export async function POST(req: Request) {
 
   const booking = await prisma.booking.create({
     data: {
-      customerId: session.user.id!,
+      customerId: session.user.id,
       staffId,
       serviceId,
       businessId,
@@ -133,7 +133,7 @@ export async function POST(req: Request) {
 
 export async function PATCH(req: Request) {
   const session = await auth()
-  if (!session?.user) {
+  if (!session?.user?.id) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
 
@@ -153,17 +153,30 @@ export async function PATCH(req: Request) {
 
   const booking = await prisma.booking.findUnique({
     where: { id: bookingId },
-    include: { staff: { include: { user: true } } },
   })
 
   if (!booking) {
     return NextResponse.json({ error: "Booking not found" }, { status: 404 })
   }
 
-  const isOwner = session.user.role === "BUSINESS_OWNER" && booking.businessId !== undefined
-  const isStaff = session.user.role === "STAFF"
   const isAdmin = session.user.role === "ADMIN"
   const isCustomer = session.user.id === booking.customerId
+
+  let isOwner = false
+  if (session.user.role === "BUSINESS_OWNER") {
+    const business = await prisma.business.findFirst({
+      where: { ownerId: session.user.id },
+    })
+    isOwner = business?.id === booking.businessId
+  }
+
+  let isStaff = false
+  if (session.user.role === "STAFF") {
+    const staff = await prisma.staff.findFirst({
+      where: { userId: session.user.id },
+    })
+    isStaff = staff?.id === booking.staffId
+  }
 
   if (!isAdmin && !isOwner && !isStaff && !isCustomer) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 })
@@ -179,10 +192,6 @@ export async function PATCH(req: Request) {
     updateData.scheduledAt = new Date(scheduledAt)
   }
 
-  if (status === "CANCELLED") {
-    updateData.cancelledAt = new Date()
-  }
-
   const updated = await prisma.booking.update({
     where: { id: bookingId },
     data: updateData,
@@ -193,14 +202,19 @@ export async function PATCH(req: Request) {
 
 export async function DELETE(req: Request) {
   const session = await auth()
-  if (!session?.user || session.user.role !== "ADMIN") {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+  if (!session?.user?.id || session.user.role !== "ADMIN") {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 })
   }
 
   const { bookingId } = await req.json()
 
   if (!bookingId) {
     return NextResponse.json({ error: "Missing bookingId" }, { status: 400 })
+  }
+
+  const existing = await prisma.booking.findUnique({ where: { id: bookingId } })
+  if (!existing) {
+    return NextResponse.json({ error: "Booking not found" }, { status: 404 })
   }
 
   await prisma.booking.delete({ where: { id: bookingId } })

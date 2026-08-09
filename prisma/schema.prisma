@@ -532,9 +532,9 @@ enum UserRole {
 
 enum Plan {
   FREE
+  STARTER
   PRO
   BUSINESS
-  ENTERPRISE
 }
 
 enum BookingStatus {

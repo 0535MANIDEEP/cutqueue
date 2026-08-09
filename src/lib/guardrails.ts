@@ -17,7 +17,7 @@ function checkEnv(key: string, placeholderPatterns: string[] = []): ServiceStatu
 }
 
 export function checkStripe(): ServiceCheck {
-  const status = checkEnv("STRIPE_SECRET_KEY", ["sk_test_", "sk_live_", "your-", "placeholder"])
+  const status = checkEnv("STRIPE_SECRET_KEY", ["your-", "placeholder", "sk_xxx"])
   return {
     name: "Stripe",
     status,
@@ -29,7 +29,7 @@ export function checkStripe(): ServiceCheck {
 }
 
 export function checkTwilio(): ServiceCheck {
-  const status = checkEnv("TWILIO_ACCOUNT_SID", ["AC", "your-", "placeholder"])
+  const status = checkEnv("TWILIO_ACCOUNT_SID", ["your-", "placeholder", "ACxxx"])
   return {
     name: "Twilio SMS",
     status,
@@ -41,7 +41,7 @@ export function checkTwilio(): ServiceCheck {
 }
 
 export function checkEmail(): ServiceCheck {
-  const status = checkEnv("RESEND_API_KEY", ["re_", "your-", "placeholder"])
+  const status = checkEnv("RESEND_API_KEY", ["your-", "placeholder", "re_xxx"])
   return {
     name: "Email (Resend)",
     status,
@@ -65,7 +65,7 @@ export function checkGemini(): ServiceCheck {
 }
 
 export function checkDatabase(): ServiceCheck {
-  const status = checkEnv("DATABASE_URL", ["[YOUR-", "placeholder"])
+  const status = checkEnv("DATABASE_URL", ["[YOUR-", "placeholder", "[YOUR-PASSWORD]"])
   return {
     name: "Database (Supabase)",
     status,

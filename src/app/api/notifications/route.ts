@@ -4,18 +4,18 @@ import { prisma } from "@/lib/prisma"
 
 export async function GET() {
   const session = await auth()
-  if (!session?.user) {
+  if (!session?.user?.id) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
 
   const notifications = await prisma.notification.findMany({
-    where: { userId: session.user.id! },
+    where: { userId: session.user.id },
     orderBy: { createdAt: "desc" },
     take: 50,
   })
 
   const unreadCount = await prisma.notification.count({
-    where: { userId: session.user.id!, isRead: false },
+    where: { userId: session.user.id, isRead: false },
   })
 
   return NextResponse.json({ notifications, unreadCount })
@@ -23,7 +23,7 @@ export async function GET() {
 
 export async function PATCH(req: Request) {
   const session = await auth()
-  if (!session?.user) {
+  if (!session?.user?.id) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
 
@@ -31,7 +31,7 @@ export async function PATCH(req: Request) {
 
   if (markAllRead) {
     await prisma.notification.updateMany({
-      where: { userId: session.user.id!, isRead: false },
+      where: { userId: session.user.id, isRead: false },
       data: { isRead: true },
     })
     return NextResponse.json({ success: true })
@@ -39,6 +39,18 @@ export async function PATCH(req: Request) {
 
   if (!notificationId) {
     return NextResponse.json({ error: "notificationId required" }, { status: 400 })
+  }
+
+  const notification = await prisma.notification.findUnique({
+    where: { id: notificationId },
+  })
+
+  if (!notification) {
+    return NextResponse.json({ error: "Notification not found" }, { status: 404 })
+  }
+
+  if (notification.userId !== session.user.id) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 })
   }
 
   await prisma.notification.update({

@@ -31,15 +31,27 @@ export async function PATCH(req: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 403 })
   }
 
-  const { id, ...data } = await req.json()
+  const { id, name, description, duration, price, category, isActive } = await req.json()
 
   if (!id) {
     return NextResponse.json({ error: "Service ID required" }, { status: 400 })
   }
 
+  const existing = await prisma.service.findUnique({ where: { id } })
+  if (!existing) {
+    return NextResponse.json({ error: "Service not found" }, { status: 404 })
+  }
+
   const service = await prisma.service.update({
     where: { id },
-    data,
+    data: {
+      ...(name !== undefined && { name }),
+      ...(description !== undefined && { description }),
+      ...(duration !== undefined && { duration: Math.max(1, duration) }),
+      ...(price !== undefined && { price: Math.max(0, price) }),
+      ...(category !== undefined && { category }),
+      ...(isActive !== undefined && { isActive }),
+    },
   })
 
   return NextResponse.json(service)
@@ -55,6 +67,11 @@ export async function DELETE(req: Request) {
 
   if (!id) {
     return NextResponse.json({ error: "Service ID required" }, { status: 400 })
+  }
+
+  const existing = await prisma.service.findUnique({ where: { id } })
+  if (!existing) {
+    return NextResponse.json({ error: "Service not found" }, { status: 404 })
   }
 
   await prisma.service.delete({ where: { id } })
