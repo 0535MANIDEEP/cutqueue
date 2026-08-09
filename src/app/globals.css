@@ -1,24 +1,26 @@
 @import "tailwindcss";
 
 /* ──────────────────────────────────────────────
-   CUTQUEUE DESIGN SYSTEM
-   Dark Editorial Theme (Green + Gold)
+   CUTQUEUE DESIGN SYSTEM v2
+   Dark Editorial — Barbershop Culture
    ────────────────────────────────────────────── */
 
 @theme inline {
-  /* Colors */
-  --color-background: #0F1B17;
+  /* Colors — Off-blacks, warm neutrals, single gold accent */
+  --color-background: #0A0F0D;
   --color-foreground: #EFE9DA;
-  --color-surface: #1E2E29;
-  --color-surface-2: #2A3F3A;
+  --color-surface: #141C18;
+  --color-surface-2: #1E2A24;
+  --color-surface-3: #263329;
   --color-gold: #E8B547;
-  --color-gold-dark: #D4A43D;
+  --color-gold-dim: #C49A3A;
   --color-cream: #EFE9DA;
   --color-muted: #EFE9DA66;
+  --color-border: #263329;
 
   /* Typography */
-  --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
-  --font-display: 'Fraunces', 'Playfair Display', Georgia, serif;
+  --font-sans: var(--font-geist-sans), system-ui, -apple-system, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
 
   /* Spacing */
   --spacing-18: 4.5rem;
@@ -54,8 +56,8 @@ body {
    ────────────────────────────────────────────── */
 
 ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 6px;
+  height: 6px;
 }
 
 ::-webkit-scrollbar-track {
@@ -64,7 +66,7 @@ body {
 
 ::-webkit-scrollbar-thumb {
   background: var(--color-surface-2);
-  border-radius: 4px;
+  border-radius: 3px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
@@ -90,50 +92,36 @@ body {
 }
 
 /* ──────────────────────────────────────────────
-   ANIMATIONS
+   MOTION — Emil Kowalski methodology
+   Custom easing curves, not CSS defaults
    ────────────────────────────────────────────── */
 
-@keyframes fade-in {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+:root {
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
-@keyframes slide-in-right {
-  from {
-    opacity: 0;
-    transform: translateX(20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(0);
-  }
+/* Button press feedback — Emil §Buttons */
+button, a[role="button"], [data-button] {
+  transition: transform 160ms var(--ease-out);
 }
 
-@keyframes pulse-gold {
-  0%, 100% {
-    box-shadow: 0 0 0 0 rgba(232, 181, 71, 0.4);
+button:active, a[role="button"]:active, [data-button]:active {
+  transform: scale(0.97);
+}
+
+/* ──────────────────────────────────────────────
+   REDUCED MOTION — Mandatory per Emil + Impeccable
+   ────────────────────────────────────────────── */
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
-  50% {
-    box-shadow: 0 0 0 10px rgba(232, 181, 71, 0);
-  }
-}
-
-.animate-fade-in {
-  animation: fade-in 0.3s ease-out;
-}
-
-.animate-slide-in-right {
-  animation: slide-in-right 0.3s ease-out;
-}
-
-.animate-pulse-gold {
-  animation: pulse-gold 2s infinite;
 }
 
 /* ──────────────────────────────────────────────
@@ -141,10 +129,10 @@ body {
    ────────────────────────────────────────────── */
 
 .glass {
-  background: rgba(30, 46, 41, 0.8);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(42, 63, 58, 0.5);
+  background: rgba(20, 28, 24, 0.8);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(38, 51, 41, 0.5);
 }
 
 /* ──────────────────────────────────────────────
@@ -157,8 +145,8 @@ body {
     opacity: 1;
   }
   50% {
-    transform: scale(1.05);
-    opacity: 0.8;
+    transform: scale(1.03);
+    opacity: 0.85;
   }
 }
 
@@ -178,4 +166,35 @@ body {
 
 .ticket-called {
   animation: ticket-flash 0.5s ease-in-out 3;
+}
+
+/* ──────────────────────────────────────────────
+   BENTO GRID UTILITIES
+   ────────────────────────────────────────────── */
+
+.bento-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  grid-template-rows: auto auto;
+  gap: 1rem;
+}
+
+@media (max-width: 768px) {
+  .bento-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ──────────────────────────────────────────────
+   NOISE TEXTURE — Fixed, pointer-events-none
+   ────────────────────────────────────────────── */
+
+.noise::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  pointer-events: none;
+  opacity: 0.03;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
 }

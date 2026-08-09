@@ -1,18 +1,9 @@
 import type { Metadata } from 'next'
-import { Inter, Fraunces } from 'next/font/google'
+import { GeistSans } from 'geist/font/sans'
+import { GeistMono } from 'geist/font/mono'
 import { Header } from '@/components/layout/header'
 import { Footer } from '@/components/layout/footer'
 import './globals.css'
-
-const inter = Inter({
-  variable: '--font-inter',
-  subsets: ['latin'],
-})
-
-const fraunces = Fraunces({
-  variable: '--font-fraunces',
-  subsets: ['latin'],
-})
 
 export const metadata: Metadata = {
   title: 'CutQueue — Skip the Line, Book the Vibe',
@@ -41,8 +32,8 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en" className={`${inter.variable} ${fraunces.variable}`}>
-      <body className="min-h-screen bg-[#0F1B17] text-[#EFE9DA] font-sans antialiased">
+    <html lang="en" className={GeistSans.variable}>
+      <body className={`${GeistSans.className} ${GeistMono.className} min-h-screen bg-[#0A0F0D] text-[#EFE9DA] antialiased`}>
         <Header />
         <main className="flex-1">{children}</main>
         <Footer />

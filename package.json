@@ -16,6 +16,8 @@
     "date-fns": "^4.4.0",
     "dotenv": "^17.4.2",
     "framer-motion": "^13.0.0",
+    "geist": "^1.7.2",
+    "motion": "^13.0.0",
     "next": "16.3.0",
     "next-auth": "^5.0.0-beta.32",
     "prisma": "^7.9.1",

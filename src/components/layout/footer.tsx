@@ -3,25 +3,19 @@ import Link from 'next/link'
 const footerLinks = {
   product: [
     { label: 'Features', href: '/#features' },
-    { label: 'Pricing', href: '/#pricing' },
     { label: 'Queue Demo', href: '/queue' },
-    { label: 'API', href: '/docs/api' },
+    { label: 'Sign Up', href: '/auth/signup' },
   ],
   company: [
-    { label: 'About', href: '/#about' },
-    { label: 'Blog', href: '/blog' },
-    { label: 'Careers', href: '/careers' },
-    { label: 'Contact', href: '/contact' },
+    { label: 'Home', href: '/' },
+    { label: 'Live Queue', href: '/queue' },
   ],
   legal: [
-    { label: 'Privacy', href: '/privacy' },
-    { label: 'Terms', href: '/terms' },
-    { label: 'Cookie Policy', href: '/cookies' },
+    { label: 'Privacy', href: '#' },
+    { label: 'Terms', href: '#' },
   ],
   social: [
-    { label: 'Twitter', href: 'https://twitter.com/cutqueue' },
-    { label: 'Instagram', href: 'https://instagram.com/cutqueue' },
-    { label: 'GitHub', href: 'https://github.com/cutqueue' },
+    { label: 'GitHub', href: 'https://github.com/0535MANIDEEP/cutqueue' },
   ],
 }
 
