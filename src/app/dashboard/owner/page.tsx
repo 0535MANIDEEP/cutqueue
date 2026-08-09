@@ -1,0 +1,421 @@
+"use client"
+
+import { useSession, signOut } from "next-auth/react"
+import { useRouter } from "next/navigation"
+import { useEffect, useState } from "react"
+import Link from "next/link"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { cn } from "@/lib/utils"
+
+interface QueueEntry {
+  id: string
+  ticketNumber: number
+  name: string
+  serviceType: string | null
+  joinedAt: string
+}
+
+interface QueueData {
+  id: string
+  currentNumber: number
+  estimatedWait: number
+  waiting: QueueEntry[]
+  called: QueueEntry[]
+  inProgress: QueueEntry[]
+}
+
+interface Service {
+  id: string
+  name: string
+  duration: number
+  price: number
+  category: string
+  isActive: boolean
+}
+
+interface Booking {
+  id: string
+  scheduledAt: string
+  status: string
+  customer: { name: string | null }
+  service: { name: string }
+  staff: { user: { name: string | null } }
+}
+
+type Tab = "queue" | "services" | "bookings" | "settings"
+
+export default function OwnerDashboard() {
+  const { data: session, status } = useSession()
+  const router = useRouter()
+  const [tab, setTab] = useState<Tab>("queue")
+  const [queue, setQueue] = useState<QueueData | null>(null)
+  const [services, setServices] = useState<Service[]>([])
+  const [bookings, setBookings] = useState<Booking[]>([])
+  const [shopName, setShopName] = useState("")
+  const [loading, setLoading] = useState(true)
+  const [showAddService, setShowAddService] = useState(false)
+  const [newService, setNewService] = useState({ name: "", duration: 30, price: 0, category: "general" })
+
+  useEffect(() => {
+    if (status === "unauthenticated") router.push("/auth/signin")
+    if (status === "authenticated") fetchAll()
+  }, [status, router])
+
+  const fetchAll = async () => {
+    try {
+      const [queueRes, servicesRes, bookingsRes] = await Promise.all([
+        fetch("/api/queue"),
+        fetch("/api/services"),
+        fetch("/api/bookings"),
+      ])
+      if (queueRes.ok) {
+        const data = await queueRes.json()
+        setQueue(data.queue)
+        setShopName(data.business?.name || "Dashboard")
+      }
+      if (servicesRes.ok) setServices(await servicesRes.json())
+      if (bookingsRes.ok) setBookings(await bookingsRes.json())
+    } catch (error) {
+      console.error("Failed to fetch data:", error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const updateEntry = async (id: string, action: string) => {
+    try {
+      await fetch(`/api/queue/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action }),
+      })
+      fetchAll()
+    } catch (error) {
+      console.error("Failed to update entry:", error)
+    }
+  }
+
+  const addService = async () => {
+    try {
+      const res = await fetch("/api/services", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(newService),
+      })
+      if (res.ok) {
+        setShowAddService(false)
+        setNewService({ name: "", duration: 30, price: 0, category: "general" })
+        fetchAll()
+      }
+    } catch (error) {
+      console.error("Failed to add service:", error)
+    }
+  }
+
+  if (status === "loading" || loading) {
+    return (
+      <div className="min-h-screen bg-[#0A0F0D] flex items-center justify-center">
+        <div className="text-[#EFE9DA]/50">Loading...</div>
+      </div>
+    )
+  }
+
+  if (!session) return null
+
+  const tabs: { id: Tab; label: string; count?: number }[] = [
+    { id: "queue", label: "Queue", count: queue?.waiting.length },
+    { id: "services", label: "Services", count: services.length },
+    { id: "bookings", label: "Bookings", count: bookings.length },
+    { id: "settings", label: "Settings" },
+  ]
+
+  return (
+    <div className="min-h-screen bg-[#0A0F0D]">
+      <header className="border-b border-[#263329] px-4 py-4">
+        <div className="max-w-7xl mx-auto flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-lg bg-[#E8B547] flex items-center justify-center">
+              <svg className="w-6 h-6 text-[#0A0F0D]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+            <div>
+              <h1 className="text-lg font-bold text-[#EFE9DA]">{shopName || "Dashboard"}</h1>
+              <p className="text-xs text-[#EFE9DA]/40">{session.user?.email}</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-3">
+            <Link href="/portfolio">
+              <Button variant="outline" size="sm">Portfolio</Button>
+            </Link>
+            <Button variant="outline" size="sm" onClick={() => signOut({ callbackUrl: "/" })}>
+              Sign Out
+            </Button>
+          </div>
+        </div>
+      </header>
+
+      <main className="max-w-7xl mx-auto px-4 py-8">
+        {/* Stats */}
+        <div className="grid grid-cols-3 gap-4 mb-8">
+          <Card>
+            <CardContent className="text-center">
+              <div className="text-3xl font-bold text-[#E8B547]">{queue?.waiting.length || 0}</div>
+              <div className="text-sm text-[#EFE9DA]/60">Waiting</div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="text-center">
+              <div className="text-3xl font-bold text-green-500">{queue?.inProgress.length || 0}</div>
+              <div className="text-sm text-[#EFE9DA]/60">In Progress</div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="text-center">
+              <div className="text-3xl font-bold text-[#EFE9DA]">{queue?.estimatedWait || 0}m</div>
+              <div className="text-sm text-[#EFE9DA]/60">Est. Wait</div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Tabs */}
+        <div className="flex gap-2 mb-6 border-b border-[#263329] pb-3">
+          {tabs.map((t) => (
+            <button
+              key={t.id}
+              onClick={() => setTab(t.id)}
+              className={cn(
+                "px-4 py-2 rounded-lg text-sm font-medium transition-colors",
+                tab === t.id
+                  ? "bg-[#E8B547]/10 text-[#E8B547]"
+                  : "text-[#EFE9DA]/50 hover:text-[#EFE9DA]"
+              )}
+            >
+              {t.label}
+              {t.count !== undefined && (
+                <span className="ml-2 px-1.5 py-0.5 rounded bg-[#263329] text-xs">{t.count}</span>
+              )}
+            </button>
+          ))}
+        </div>
+
+        {/* Queue Tab */}
+        {tab === "queue" && (
+          <div className="grid lg:grid-cols-2 gap-6">
+            <Card>
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <CardTitle>Waiting Queue</CardTitle>
+                  {queue?.waiting && queue.waiting.length > 0 && (
+                    <Button variant="primary" size="sm" onClick={() => updateEntry(queue.waiting[0].id, "call")}>
+                      Call Next — #{queue.waiting[0].ticketNumber}
+                    </Button>
+                  )}
+                </div>
+              </CardHeader>
+              <CardContent>
+                {queue?.waiting.length === 0 ? (
+                  <p className="text-[#EFE9DA]/40 text-sm">Queue is empty</p>
+                ) : (
+                  <div className="space-y-2">
+                    {queue?.waiting.map((entry, i) => (
+                      <div
+                        key={entry.id}
+                        className={cn(
+                          "flex items-center justify-between p-3 rounded-lg border bg-[#141C18]",
+                          i === 0 ? "border-[#E8B547]/30 bg-[#E8B547]/5" : "border-[#263329]/50"
+                        )}
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className={cn(
+                            "w-10 h-10 rounded-lg flex items-center justify-center font-bold",
+                            i === 0 ? "bg-[#E8B547] text-[#0A0F0D]" : "bg-[#263329] text-[#EFE9DA]/60"
+                          )}>
+                            {entry.ticketNumber}
+                          </div>
+                          <div>
+                            <div className="font-medium text-[#EFE9DA]">{entry.name}</div>
+                            <div className="text-xs text-[#EFE9DA]/50">{entry.serviceType || "Service"}</div>
+                          </div>
+                        </div>
+                        {i === 0 && <span className="text-xs font-mono text-[#E8B547]">NEXT</span>}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            <div className="space-y-6">
+              <Card>
+                <CardHeader><CardTitle>Called</CardTitle></CardHeader>
+                <CardContent>
+                  {queue?.called.length === 0 ? (
+                    <p className="text-[#EFE9DA]/40 text-sm">No one called</p>
+                  ) : (
+                    <div className="space-y-3">
+                      {queue?.called.map((entry) => (
+                        <div key={entry.id} className="flex items-center justify-between p-3 rounded-lg bg-[#E8B547]/10 border border-[#E8B547]/30">
+                          <div>
+                            <div className="font-semibold text-[#EFE9DA]">#{entry.ticketNumber} — {entry.name}</div>
+                            <div className="text-xs text-[#EFE9DA]/50">{entry.serviceType || "Service"}</div>
+                          </div>
+                          <div className="flex gap-2">
+                            <Button size="sm" variant="primary" onClick={() => updateEntry(entry.id, "start")}>Start</Button>
+                            <Button size="sm" variant="outline" onClick={() => updateEntry(entry.id, "cancel")}>Cancel</Button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader><CardTitle>In Progress</CardTitle></CardHeader>
+                <CardContent>
+                  {queue?.inProgress.length === 0 ? (
+                    <p className="text-[#EFE9DA]/40 text-sm">No active services</p>
+                  ) : (
+                    <div className="space-y-3">
+                      {queue?.inProgress.map((entry) => (
+                        <div key={entry.id} className="flex items-center justify-between p-3 rounded-lg bg-green-500/10 border border-green-500/30">
+                          <div>
+                            <div className="font-semibold text-[#EFE9DA]">#{entry.ticketNumber} — {entry.name}</div>
+                            <div className="text-xs text-[#EFE9DA]/50">{entry.serviceType || "Service"}</div>
+                          </div>
+                          <Button size="sm" variant="primary" onClick={() => updateEntry(entry.id, "complete")}>Complete</Button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+        )}
+
+        {/* Services Tab */}
+        {tab === "services" && (
+          <div className="space-y-4">
+            <div className="flex justify-end">
+              <Button variant="primary" onClick={() => setShowAddService(true)}>Add Service</Button>
+            </div>
+
+            {showAddService && (
+              <Card>
+                <CardHeader><CardTitle>New Service</CardTitle></CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm text-[#EFE9DA]/60 mb-1">Name</label>
+                      <Input value={newService.name} onChange={(e) => setNewService({ ...newService, name: e.target.value })} />
+                    </div>
+                    <div>
+                      <label className="block text-sm text-[#EFE9DA]/60 mb-1">Category</label>
+                      <Input value={newService.category} onChange={(e) => setNewService({ ...newService, category: e.target.value })} />
+                    </div>
+                    <div>
+                      <label className="block text-sm text-[#EFE9DA]/60 mb-1">Duration (min)</label>
+                      <Input type="number" value={newService.duration} onChange={(e) => setNewService({ ...newService, duration: parseInt(e.target.value) || 0 })} />
+                    </div>
+                    <div>
+                      <label className="block text-sm text-[#EFE9DA]/60 mb-1">Price ($)</label>
+                      <Input type="number" step="0.01" value={newService.price} onChange={(e) => setNewService({ ...newService, price: parseFloat(e.target.value) || 0 })} />
+                    </div>
+                  </div>
+                  <div className="flex gap-3">
+                    <Button variant="primary" onClick={addService}>Save</Button>
+                    <Button variant="outline" onClick={() => setShowAddService(false)}>Cancel</Button>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            <Card>
+              <CardContent className="p-0">
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b border-[#263329]">
+                      <th className="text-left px-4 py-3 text-xs font-medium text-[#EFE9DA]/60 uppercase">Service</th>
+                      <th className="text-left px-4 py-3 text-xs font-medium text-[#EFE9DA]/60 uppercase">Duration</th>
+                      <th className="text-left px-4 py-3 text-xs font-medium text-[#EFE9DA]/60 uppercase">Price</th>
+                      <th className="text-left px-4 py-3 text-xs font-medium text-[#EFE9DA]/60 uppercase">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {services.map((s) => (
+                      <tr key={s.id} className="border-b border-[#263329]/50">
+                        <td className="px-4 py-3">
+                          <div className="text-sm font-medium text-[#EFE9DA]">{s.name}</div>
+                          <div className="text-xs text-[#EFE9DA]/50">{s.category}</div>
+                        </td>
+                        <td className="px-4 py-3 text-sm text-[#EFE9DA]/70">{s.duration} min</td>
+                        <td className="px-4 py-3 text-sm text-[#E8B547]">${s.price}</td>
+                        <td className="px-4 py-3">
+                          <span className={`px-2 py-1 rounded text-xs font-medium ${s.isActive ? "bg-green-500/10 text-green-400" : "bg-red-500/10 text-red-400"}`}>
+                            {s.isActive ? "Active" : "Inactive"}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </CardContent>
+            </Card>
+          </div>
+        )}
+
+        {/* Bookings Tab */}
+        {tab === "bookings" && (
+          <Card>
+            <CardContent className="p-0">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b border-[#263329]">
+                    <th className="text-left px-4 py-3 text-xs font-medium text-[#EFE9DA]/60 uppercase">Customer</th>
+                    <th className="text-left px-4 py-3 text-xs font-medium text-[#EFE9DA]/60 uppercase">Service</th>
+                    <th className="text-left px-4 py-3 text-xs font-medium text-[#EFE9DA]/60 uppercase">Staff</th>
+                    <th className="text-left px-4 py-3 text-xs font-medium text-[#EFE9DA]/60 uppercase">Date</th>
+                    <th className="text-left px-4 py-3 text-xs font-medium text-[#EFE9DA]/60 uppercase">Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {bookings.map((b) => (
+                    <tr key={b.id} className="border-b border-[#263329]/50">
+                      <td className="px-4 py-3 text-sm text-[#EFE9DA]">{b.customer.name || "Customer"}</td>
+                      <td className="px-4 py-3 text-sm text-[#EFE9DA]/70">{b.service.name}</td>
+                      <td className="px-4 py-3 text-sm text-[#EFE9DA]/70">{b.staff.user.name || "Any"}</td>
+                      <td className="px-4 py-3 text-sm text-[#EFE9DA]/70">{new Date(b.scheduledAt).toLocaleDateString()}</td>
+                      <td className="px-4 py-3">
+                        <span className={`px-2 py-1 rounded text-xs font-medium ${
+                          b.status === "COMPLETED" ? "bg-green-500/10 text-green-400" :
+                          b.status === "CANCELLED" ? "bg-red-500/10 text-red-400" :
+                          "bg-yellow-500/10 text-yellow-400"
+                        }`}>
+                          {b.status}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Settings Tab */}
+        {tab === "settings" && (
+          <Card>
+            <CardHeader><CardTitle>Business Settings</CardTitle></CardHeader>
+            <CardContent>
+              <p className="text-[#EFE9DA]/40 text-sm">Business settings coming soon. For now, manage your business via the admin panel.</p>
+            </CardContent>
+          </Card>
+        )}
+      </main>
+    </div>
+  )
+}

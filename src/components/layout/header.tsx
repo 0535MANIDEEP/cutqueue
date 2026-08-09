@@ -5,10 +5,9 @@ import { useSession, signOut } from 'next-auth/react'
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 
-const navLinks = [
+const publicLinks = [
   { href: '/#features', label: 'Features' },
   { href: '/#pricing', label: 'Pricing' },
-  { href: '/book', label: 'Book' },
   { href: '/portfolio', label: 'Portfolio' },
   { href: '/queue', label: 'Live Queue' },
 ]
@@ -16,6 +15,25 @@ const navLinks = [
 export function Header() {
   const { data: session } = useSession()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const role = session?.user?.role as string | undefined
+
+  const getDashboardLabel = () => {
+    switch (role) {
+      case 'ADMIN': return 'Admin Panel'
+      case 'BUSINESS_OWNER': return 'Dashboard'
+      case 'STAFF': return 'Dashboard'
+      default: return 'My Bookings'
+    }
+  }
+
+  const getDashboardHref = () => {
+    switch (role) {
+      case 'ADMIN': return '/admin'
+      case 'BUSINESS_OWNER': return '/dashboard/owner'
+      case 'STAFF': return '/dashboard/staff'
+      default: return '/dashboard/customer'
+    }
+  }
 
   return (
     <header className="fixed top-0 left-0 right-0 z-50 bg-[#0F1B17]/90 backdrop-blur-md border-b border-[#2A3F3A]/50">
@@ -24,18 +42,8 @@ export function Header() {
           {/* Logo */}
           <Link href="/" className="flex items-center gap-2">
             <div className="w-8 h-8 rounded-lg bg-[#E8B547] flex items-center justify-center">
-              <svg
-                className="w-5 h-5 text-[#0F1B17]"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M13 10V3L4 14h7v7l9-11h-7z"
-                />
+              <svg className="w-5 h-5 text-[#0F1B17]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
               </svg>
             </div>
             <span className="text-xl font-bold text-[#EFE9DA]">
@@ -44,8 +52,8 @@ export function Header() {
           </Link>
 
           {/* Desktop Navigation */}
-          <nav className="hidden md:flex items-center gap-8">
-            {navLinks.map((link) => (
+          <nav className="hidden md:flex items-center gap-6">
+            {publicLinks.map((link) => (
               <Link
                 key={link.href}
                 href={link.href}
@@ -60,33 +68,25 @@ export function Header() {
           <div className="hidden md:flex items-center gap-3">
             {session ? (
               <>
-                {session.user?.role === "ADMIN" && (
+                {role === 'ADMIN' && (
                   <Link href="/admin">
-                    <Button variant="ghost" size="sm">
-                      Admin
-                    </Button>
+                    <Button variant="ghost" size="sm">Admin</Button>
                   </Link>
                 )}
-                <Link href="/dashboard">
-                  <Button variant="ghost" size="sm">
-                    Dashboard
-                  </Button>
+                <Link href={getDashboardHref()}>
+                  <Button variant="ghost" size="sm">{getDashboardLabel()}</Button>
                 </Link>
-                <Button variant="outline" size="sm" onClick={() => signOut({ callbackUrl: "/" })}>
+                <Button variant="outline" size="sm" onClick={() => signOut({ callbackUrl: '/' })}>
                   Sign Out
                 </Button>
               </>
             ) : (
               <>
                 <Link href="/auth/signin">
-                  <Button variant="ghost" size="sm">
-                    Sign In
-                  </Button>
+                  <Button variant="ghost" size="sm">Sign In</Button>
                 </Link>
                 <Link href="/auth/signup">
-                  <Button variant="primary" size="sm">
-                    Get Started
-                  </Button>
+                  <Button variant="primary" size="sm">Get Started</Button>
                 </Link>
               </>
             )}
@@ -97,26 +97,11 @@ export function Header() {
             className="md:hidden p-2 text-[#EFE9DA]"
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
           >
-            <svg
-              className="w-6 h-6"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               {mobileMenuOpen ? (
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M6 18L18 6M6 6l12 12"
-                />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
               ) : (
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M4 6h16M4 12h16M4 18h16"
-                />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
               )}
             </svg>
           </button>
@@ -126,7 +111,7 @@ export function Header() {
         {mobileMenuOpen && (
           <div className="md:hidden py-4 border-t border-[#2A3F3A]/50">
             <nav className="flex flex-col gap-2">
-              {navLinks.map((link) => (
+              {publicLinks.map((link) => (
                 <Link
                   key={link.href}
                   href={link.href}
@@ -139,33 +124,25 @@ export function Header() {
               <div className="flex gap-2 mt-2 pt-2 border-t border-[#2A3F3A]/50">
                 {session ? (
                   <>
-                    {session.user?.role === "ADMIN" && (
-                      <Link href="/admin" className="flex-1">
-                        <Button variant="outline" size="sm" className="w-full">
-                          Admin
-                        </Button>
+                    {role === 'ADMIN' && (
+                      <Link href="/admin" className="flex-1" onClick={() => setMobileMenuOpen(false)}>
+                        <Button variant="outline" size="sm" className="w-full">Admin</Button>
                       </Link>
                     )}
-                    <Link href="/dashboard" className="flex-1">
-                      <Button variant="outline" size="sm" className="w-full">
-                        Dashboard
-                      </Button>
+                    <Link href={getDashboardHref()} className="flex-1" onClick={() => setMobileMenuOpen(false)}>
+                      <Button variant="outline" size="sm" className="w-full">{getDashboardLabel()}</Button>
                     </Link>
-                    <Button variant="ghost" size="sm" className="flex-1" onClick={() => signOut({ callbackUrl: "/" })}>
+                    <Button variant="ghost" size="sm" className="flex-1" onClick={() => signOut({ callbackUrl: '/' })}>
                       Sign Out
                     </Button>
                   </>
                 ) : (
                   <>
-                    <Link href="/auth/signin" className="flex-1">
-                      <Button variant="outline" size="sm" className="w-full">
-                        Sign In
-                      </Button>
+                    <Link href="/auth/signin" className="flex-1" onClick={() => setMobileMenuOpen(false)}>
+                      <Button variant="outline" size="sm" className="w-full">Sign In</Button>
                     </Link>
-                    <Link href="/auth/signup" className="flex-1">
-                      <Button variant="primary" size="sm" className="w-full">
-                        Get Started
-                      </Button>
+                    <Link href="/auth/signup" className="flex-1" onClick={() => setMobileMenuOpen(false)}>
+                      <Button variant="primary" size="sm" className="w-full">Get Started</Button>
                     </Link>
                   </>
                 )}
