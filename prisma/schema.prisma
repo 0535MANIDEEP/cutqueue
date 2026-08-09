@@ -5,7 +5,6 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
 }
 
 // ──────────────────────────────────────────────
@@ -24,11 +23,10 @@ model User {
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
-  // Relations
   accounts      Account[]
   sessions      Session[]
-  shop          BarberShop?   @relation("ShopOwner")
-  barberProfile BarberProfile?
+  business      Business?     @relation("BusinessOwner")
+  staff         Staff?
   bookings      Booking[]
   queueEntries  QueueEntry[]
   reviews       Review[]
@@ -72,12 +70,32 @@ model VerificationToken {
 }
 
 // ──────────────────────────────────────────────
-// BARBERSHOP
+// INDUSTRY TEMPLATES
 // ──────────────────────────────────────────────
 
-model BarberShop {
+model IndustryTemplate {
+  id            String    @id @default(cuid())
+  slug          String    @unique
+  name          String
+  description   String
+  category      String    // "beauty", "healthcare", "automotive", "government", "retail", "fitness"
+  icon          String
+  queueType     String    // "ticket", "appointment", "slot", "number"
+  features      Json      // ["portfolio", "booking", "analytics", "sms"]
+  defaultServices Json    // [{ name: "Haircut", duration: 30, price: 25 }]
+  createdAt     DateTime  @default(now())
+
+  businesses    Business[]
+}
+
+// ──────────────────────────────────────────────
+// BUSINESS (Multi-tenant)
+// ──────────────────────────────────────────────
+
+model Business {
   id            String    @id @default(cuid())
   ownerId       String
+  templateId    String
   name          String
   slug          String    @unique
   description   String?
@@ -93,13 +111,16 @@ model BarberShop {
   logoUrl       String?
   coverUrl      String?
   openingHours  Json      // { mon: { open: "09:00", close: "18:00" }, ... }
+  settings      Json      // { smsEnabled: true, aiEnabled: true, ... }
+  plan          Plan      @default(FREE)
+  planExpiresAt DateTime?
   isActive      Boolean   @default(true)
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
-  // Relations
-  owner         User      @relation("ShopOwner", fields: [ownerId], references: [id])
-  barbers       BarberProfile[]
+  owner         User      @relation("BusinessOwner", fields: [ownerId], references: [id])
+  template      IndustryTemplate @relation(fields: [templateId], references: [id])
+  staff         Staff[]
   services      Service[]
   queues        Queue[]
   bookings      Booking[]
@@ -107,18 +128,15 @@ model BarberShop {
 
   @@unique([ownerId])
   @@index([slug])
+  @@index([templateId])
 }
 
-// ──────────────────────────────────────────────
-// BARBER PROFILE
-// ──────────────────────────────────────────────
-
-model BarberProfile {
+model Staff {
   id            String    @id @default(cuid())
+  businessId    String
   userId        String    @unique
-  shopId        String
   bio           String?
-  specialties   String[]  // ["fades", "beard", "kids"]
+  specialties   String[]
   yearsExp      Int?
   avatarUrl     String?
   rating        Float     @default(0)
@@ -127,16 +145,15 @@ model BarberProfile {
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
-  // Relations
   user          User      @relation(fields: [userId], references: [id])
-  shop          BarberShop @relation(fields: [shopId], references: [id])
-  services      BarberService[]
+  business      Business  @relation(fields: [businessId], references: [id])
+  services      StaffService[]
   bookings      Booking[]
   queueEntries  QueueEntry[]
   portfolio     PortfolioImage[]
   reviews       Review[]
 
-  @@index([shopId])
+  @@index([businessId])
 }
 
 // ──────────────────────────────────────────────
@@ -145,35 +162,34 @@ model BarberProfile {
 
 model Service {
   id          String    @id @default(cuid())
-  shopId      String
+  businessId  String
   name        String
   description String?
   duration    Int       // minutes
   price       Float
-  category    String    // "haircut", "beard", "combo", "kids"
+  category    String    // "haircut", "beard", "dental", "repair", etc.
   isActive    Boolean   @default(true)
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
 
-  // Relations
-  shop        BarberShop @relation(fields: [shopId], references: [id])
-  barbers     BarberService[]
+  business    Business  @relation(fields: [businessId], references: [id])
+  staff       StaffService[]
   bookings    Booking[]
 
-  @@index([shopId])
+  @@index([businessId])
   @@index([category])
 }
 
-model BarberService {
+model StaffService {
   id        String  @id @default(cuid())
-  barberId  String
+  staffId   String
   serviceId String
   price     Float?  // Override price (nullable = use service default)
 
-  barber  BarberProfile @relation(fields: [barberId], references: [id])
-  service Service       @relation(fields: [serviceId], references: [id])
+  staff   Staff   @relation(fields: [staffId], references: [id])
+  service Service @relation(fields: [serviceId], references: [id])
 
-  @@unique([barberId, serviceId])
+  @@unique([staffId, serviceId])
 }
 
 // ──────────────────────────────────────────────
@@ -183,9 +199,9 @@ model BarberService {
 model Booking {
   id              String        @id @default(cuid())
   customerId      String
-  barberId        String
+  staffId         String
   serviceId       String
-  shopId          String
+  businessId      String
   scheduledAt     DateTime
   duration        Int           // minutes
   status          BookingStatus @default(PENDING)
@@ -195,15 +211,14 @@ model Booking {
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
 
-  // Relations
   customer  User            @relation(fields: [customerId], references: [id])
-  barber    BarberProfile   @relation(fields: [barberId], references: [id])
+  staff     Staff           @relation(fields: [staffId], references: [id])
   service   Service         @relation(fields: [serviceId], references: [id])
-  shop      BarberShop      @relation(fields: [shopId], references: [id])
+  business  Business        @relation(fields: [businessId], references: [id])
 
   @@index([customerId])
-  @@index([barberId])
-  @@index([shopId])
+  @@index([staffId])
+  @@index([businessId])
   @@index([scheduledAt])
   @@index([status])
 }
@@ -214,38 +229,39 @@ model Booking {
 
 model Queue {
   id              String    @id @default(cuid())
-  shopId          String
+  businessId      String
+  name            String    @default("Walk-in Queue")
+  queueType       String    @default("ticket") // ticket, appointment, slot, number
   isActive        Boolean   @default(true)
   currentNumber   Int       @default(0)
   estimatedWait   Int       @default(0) // minutes
   avgServiceTime  Int       @default(20) // minutes
+  maxCapacity     Int?      // null = unlimited
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
 
-  // Relations
-  shop      BarberShop  @relation(fields: [shopId], references: [id])
-  entries   QueueEntry[]
+  business    Business    @relation(fields: [businessId], references: [id])
+  entries     QueueEntry[]
 
-  @@unique([shopId])
+  @@index([businessId])
 }
 
 model QueueEntry {
   id            String      @id @default(cuid())
   queueId       String
   customerId    String
-  barberId      String?
+  staffId       String?
   ticketNumber  Int
   status        QueueStatus @default(WAITING)
-  serviceType   String?     // "haircut", "beard", etc.
+  serviceType   String?
   joinedAt      DateTime    @default(now())
   calledAt      DateTime?
   startedAt     DateTime?
   completedAt   DateTime?
 
-  // Relations
   queue     Queue          @relation(fields: [queueId], references: [id])
   customer  User           @relation(fields: [customerId], references: [id])
-  barber    BarberProfile? @relation(fields: [barberId], references: [id])
+  staff     Staff?         @relation(fields: [staffId], references: [id])
 
   @@index([queueId])
   @@index([customerId])
@@ -258,19 +274,18 @@ model QueueEntry {
 
 model PortfolioImage {
   id          String    @id @default(cuid())
-  barberId    String
+  staffId     String
   imageUrl    String
   caption     String?
-  category    String    // "fade", "beard", "classic", "creative"
+  category    String    // "haircut", "dental", "repair", "nail", etc.
   tags        String[]
   likes       Int       @default(0)
   isFeatured  Boolean   @default(false)
   createdAt   DateTime  @default(now())
 
-  // Relations
-  barber      BarberProfile @relation(fields: [barberId], references: [id])
+  staff       Staff @relation(fields: [staffId], references: [id])
 
-  @@index([barberId])
+  @@index([staffId])
   @@index([category])
 }
 
@@ -281,8 +296,8 @@ model PortfolioImage {
 model Review {
   id          String    @id @default(cuid())
   customerId  String
-  shopId      String
-  barberId    String?
+  businessId  String
+  staffId     String?
   rating      Int       // 1-5
   comment     String?
   images      String[]
@@ -290,13 +305,12 @@ model Review {
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
 
-  // Relations
   customer  User            @relation(fields: [customerId], references: [id])
-  shop      BarberShop      @relation(fields: [shopId], references: [id])
-  barber    BarberProfile?  @relation(fields: [barberId], references: [id])
+  business  Business        @relation(fields: [businessId], references: [id])
+  staff     Staff?          @relation(fields: [staffId], references: [id])
 
-  @@index([shopId])
-  @@index([barberId])
+  @@index([businessId])
+  @@index([staffId])
   @@index([rating])
 }
 
@@ -316,7 +330,6 @@ model CustomerPoints {
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
-  // Relations
   customer      User      @relation(fields: [customerId], references: [id])
   rewards       Reward[]
 
@@ -336,7 +349,6 @@ model Reward {
   expiresAt       DateTime?
   createdAt       DateTime  @default(now())
 
-  // Relations
   points          CustomerPoints @relation(fields: [pointsId], references: [id])
 
   @@index([pointsId])
@@ -356,7 +368,6 @@ model Referral {
   createdAt     DateTime  @default(now())
   completedAt   DateTime?
 
-  // Relations
   referrer      User @relation("Referrer", fields: [referrerId], references: [id])
   referred      User? @relation("Referred", fields: [referredId], references: [id])
 
@@ -374,7 +385,7 @@ model Notification {
   type        NotificationType
   title       String
   message     String
-  data        Json?     // Additional payload
+  data        Json?
   isRead      Boolean   @default(false)
   createdAt   DateTime  @default(now())
 
@@ -383,14 +394,56 @@ model Notification {
 }
 
 // ──────────────────────────────────────────────
+// API KEYS (for platform API access)
+// ──────────────────────────────────────────────
+
+model ApiKey {
+  id          String    @id @default(cuid())
+  businessId  String
+  name        String
+  key         String    @unique
+  permissions Json      // ["read", "write", "admin"]
+  isActive    Boolean   @default(true)
+  lastUsedAt  DateTime?
+  expiresAt   DateTime?
+  createdAt   DateTime  @default(now())
+
+  @@index([businessId])
+  @@index([key])
+}
+
+// ──────────────────────────────────────────────
+// WEBHOOKS (for n8n integration)
+// ──────────────────────────────────────────────
+
+model Webhook {
+  id          String    @id @default(cuid())
+  businessId  String
+  url         String
+  events      Json      // ["queue.joined", "booking.created", "staff.called"]
+  isActive    Boolean   @default(true)
+  secret      String
+  createdAt   DateTime  @default(now())
+
+  @@index([businessId])
+}
+
+// ──────────────────────────────────────────────
 // ENUMS
 // ──────────────────────────────────────────────
 
 enum UserRole {
   CUSTOMER
-  BARBER
-  SHOP_OWNER
+  STAFF
+  BUSINESS_OWNER
   ADMIN
+}
+
+enum Plan {
+  FREE
+  PRO
+  BUSINESS
+  ENTERPRISE
 }
 
 enum BookingStatus {

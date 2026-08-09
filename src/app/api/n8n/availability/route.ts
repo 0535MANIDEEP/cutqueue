@@ -16,7 +16,7 @@ export async function GET(req: Request) {
   }
 
   const services = await prisma.service.findMany({
-    where: { shopId, isActive: true },
+    where: { businessId: shopId, isActive: true },
     orderBy: { price: "asc" },
   })
 
@@ -35,7 +35,7 @@ export async function GET(req: Request) {
 
     const bookings = await prisma.booking.findMany({
       where: {
-        shopId,
+        businessId: shopId,
         scheduledAt: { gte: dayStart, lte: dayEnd },
         status: { in: ["PENDING", "CONFIRMED"] },
       },

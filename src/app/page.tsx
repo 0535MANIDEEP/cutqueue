@@ -1,13 +1,26 @@
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { FadeIn, StaggerChildren, StaggerItem, ScaleIn } from '@/components/motion'
-import { QueueDemo } from '@/components/sections/queue-demo'
-import { Testimonials } from '@/components/sections/testimonials'
+
+const industries = [
+  { name: 'Barbershops', icon: '✂️', queue: 'Ticket-based' },
+  { name: 'Hair Salons', icon: '💇', queue: 'Stylist booking' },
+  { name: 'Nail Studios', icon: '💅', queue: 'Chair slots' },
+  { name: 'Tattoo Studios', icon: '🖋️', queue: 'Artist queue' },
+  { name: 'Dental Clinics', icon: '🦷', queue: 'Patient number' },
+  { name: 'Medical Clinics', icon: '🏥', queue: 'Patient queue' },
+  { name: 'Auto Repair', icon: '🔧', queue: 'Job ticket' },
+  { name: 'Fitness Centers', icon: '💪', queue: 'Class booking' },
+  { name: 'Government', icon: '🏛️', queue: 'Number queue' },
+  { name: 'Banks', icon: '🏦', queue: 'Service desk' },
+  { name: 'Vet Clinics', icon: '🐾', queue: 'Pet queue' },
+  { name: 'Photography', icon: '📸', queue: 'Session booking' },
+]
 
 const features = [
   {
-    title: 'Virtual Queue',
-    description: 'Customers join remotely. Get notified when it\'s their turn. No more crowded waiting areas.',
+    title: 'Live Queue',
+    description: 'Customers see their position in real-time. No more crowded waiting areas.',
     icon: (
       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
         <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -39,8 +52,19 @@ const features = [
     accent: false,
   },
   {
-    title: 'Loyalty & Points',
-    description: 'Reward returning customers. Points, tiers, exclusive perks.',
+    title: 'AI Call Assist',
+    description: 'Automated phone booking via SMS. Customers text, AI books.',
+    icon: (
+      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M12 18.75a6 6 0 006-6v-1.5m-6 7.5a6 6 0 01-6-6v-1.5m6 7.5v3.75m-3.75 0h7.5M12 15.75a3 3 0 01-3-3V4.5a3 3 0 116 0v8.25a3 3 0 01-3 3z" />
+      </svg>
+    ),
+    span: 'col-span-1',
+    accent: false,
+  },
+  {
+    title: 'Customer Ranking',
+    description: 'Points, tiers, rewards. Keep customers coming back.',
     icon: (
       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
         <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" />
@@ -51,7 +75,7 @@ const features = [
   },
   {
     title: 'Analytics',
-    description: 'Track bookings, revenue, customer insights. Make data-driven decisions.',
+    description: 'Track bookings, revenue, customer insights. Data-driven decisions.',
     icon: (
       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
         <path strokeLinecap="round" strokeLinejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z" />
@@ -69,30 +93,28 @@ const logos = [
 export default function HomePage() {
   return (
     <div className="min-h-screen bg-[#0A0F0D]">
-      {/* ─── HERO ─── Split-screen: copy left, image right */}
+      {/* ─── HERO ─── */}
       <section className="relative pt-24 pb-16 lg:pt-32 lg:pb-24 px-4 sm:px-6 lg:px-8 overflow-hidden">
         <div className="max-w-7xl mx-auto grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
-          {/* Copy */}
           <div>
             <FadeIn>
               <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#141C18] border border-[#263329] mb-6">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                <span className="text-xs text-[#EFE9DA]/60 font-mono uppercase tracking-wider">Live in 50+ cities</span>
+                <span className="text-xs text-[#EFE9DA]/60 font-mono uppercase tracking-wider">Platform for any business</span>
               </div>
             </FadeIn>
 
             <FadeIn delay={0.1}>
               <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-[#EFE9DA] mb-6 leading-[1.05] tracking-tight">
-                Your chair is
+                Build your queue,
                 <br />
-                <span className="text-[#E8B547]">waiting.</span>
+                <span className="text-[#E8B547]">skip the wait.</span>
               </h1>
             </FadeIn>
 
             <FadeIn delay={0.2}>
               <p className="text-lg text-[#EFE9DA]/50 max-w-md mb-8 leading-relaxed">
-                Queue management, booking, and portfolio — built for barbers who work from their phone.
-                Zero setup cost. Start in minutes.
+                Queue management, booking, and customer engagement — for any business where people wait. Barbershops, salons, clinics, auto shops, government offices, and more.
               </p>
             </FadeIn>
 
@@ -103,56 +125,45 @@ export default function HomePage() {
                     Start Free
                   </Button>
                 </Link>
-                <Link href="/queue">
+                <Link href="/industries">
                   <Button variant="outline" size="lg" className="w-full sm:w-auto">
-                    See Live Demo
+                    See All Industries
                   </Button>
                 </Link>
               </div>
             </FadeIn>
           </div>
 
-          {/* Hero Visual — Real barbershop imagery */}
+          {/* Hero Visual — Industry Grid */}
           <FadeIn delay={0.2} className="relative">
-            <div className="relative aspect-[4/5] rounded-2xl overflow-hidden">
-              <img
-                src="https://picsum.photos/seed/barbershop-chair/800/1000"
-                alt="Modern barbershop interior"
-                className="w-full h-full object-cover"
-              />
-              {/* Overlay gradient */}
-              <div className="absolute inset-0 bg-gradient-to-t from-[#0A0F0D]/80 via-transparent to-transparent" />
-
-              {/* Floating queue card */}
-              <div className="absolute bottom-6 left-6 right-6 glass rounded-xl p-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-xs text-[#EFE9DA]/50 font-mono uppercase tracking-wider">Next up</p>
-                    <p className="text-sm font-semibold text-[#EFE9DA] mt-0.5">Marcus J. — Fade + Lineup</p>
-                  </div>
-                  <div className="w-10 h-10 rounded-full bg-[#E8B547] flex items-center justify-center text-[#0A0F0D] font-bold text-sm">
-                    #3
-                  </div>
+            <div className="grid grid-cols-4 gap-3">
+              {industries.slice(0, 8).map((industry) => (
+                <div
+                  key={industry.name}
+                  className="aspect-square rounded-xl bg-[#141C18] border border-[#263329] flex flex-col items-center justify-center gap-2 hover:border-[#E8B547]/30 transition-colors"
+                >
+                  <span className="text-2xl">{industry.icon}</span>
+                  <span className="text-[10px] text-[#EFE9DA]/50 text-center leading-tight">{industry.name}</span>
                 </div>
-              </div>
+              ))}
             </div>
           </FadeIn>
         </div>
       </section>
 
-      {/* ─── LOGO WALL ─── Under hero, per Taste §4.8 */}
+      {/* ─── INDUSTRY WALL ─── */}
       <section className="py-12 border-t border-[#263329]/50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <FadeIn>
             <p className="text-xs text-[#EFE9DA]/30 font-mono uppercase tracking-widest text-center mb-8">
-              Trusted by barbershops across the country
+              Works for 12+ industries
             </p>
           </FadeIn>
-          <StaggerChildren className="flex flex-wrap justify-center gap-x-10 gap-y-4">
-            {logos.map((logo) => (
-              <StaggerItem key={logo}>
-                <span className="text-[#EFE9DA]/20 text-sm font-medium tracking-wide hover:text-[#EFE9DA]/40 transition-colors duration-300">
-                  {logo}
+          <StaggerChildren className="flex flex-wrap justify-center gap-x-8 gap-y-4">
+            {industries.map((industry) => (
+              <StaggerItem key={industry.name}>
+                <span className="text-[#EFE9DA]/20 text-sm font-medium tracking-wide hover:text-[#EFE9DA]/40 transition-colors duration-300 flex items-center gap-2">
+                  <span>{industry.icon}</span> {industry.name}
                 </span>
               </StaggerItem>
             ))}
@@ -160,15 +171,15 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* ─── FEATURES ─── Bento grid, varied cell sizes */}
+      {/* ─── FEATURES ─── Bento grid */}
       <section id="features" className="py-20 lg:py-28 px-4 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto">
           <FadeIn className="text-center mb-16">
             <h2 className="text-3xl md:text-4xl font-bold text-[#EFE9DA] mb-4 tracking-tight">
-              Built for the chair
+              Built for any business
             </h2>
             <p className="text-[#EFE9DA]/40 max-w-lg mx-auto">
-              Everything you need to run your shop. Nothing you don&apos;t.
+              Everything you need to manage queues, bookings, and customers. Nothing you don&apos;t.
             </p>
           </FadeIn>
 
@@ -195,36 +206,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* ─── QUEUE DEMO ─── Interactive section */}
-      <section className="py-20 lg:py-28 px-4 sm:px-6 lg:px-8 bg-[#141C18]">
-        <div className="max-w-7xl mx-auto">
-          <FadeIn className="text-center mb-12">
-            <h2 className="text-3xl md:text-4xl font-bold text-[#EFE9DA] mb-4 tracking-tight">
-              See it in action
-            </h2>
-            <p className="text-[#EFE9DA]/40 max-w-lg mx-auto">
-              Real-time queue updates. Your customers see their position. You manage everything from your phone.
-            </p>
-          </FadeIn>
-          <ScaleIn>
-            <QueueDemo />
-          </ScaleIn>
-        </div>
-      </section>
-
-      {/* ─── TESTIMONIALS ─── Social proof */}
-      <section className="py-20 lg:py-28 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-7xl mx-auto">
-          <FadeIn className="text-center mb-12">
-            <h2 className="text-3xl md:text-4xl font-bold text-[#EFE9DA] mb-4 tracking-tight">
-              What barbers say
-            </h2>
-          </FadeIn>
-          <Testimonials />
-        </div>
-      </section>
-
-      {/* ─── PRICING ─── Asymmetric layout, not identical cards */}
+      {/* ─── PRICING ─── */}
       <section id="pricing" className="py-20 lg:py-28 px-4 sm:px-6 lg:px-8 bg-[#141C18]">
         <div className="max-w-7xl mx-auto">
           <FadeIn className="text-center mb-16">
@@ -237,7 +219,6 @@ export default function HomePage() {
           </FadeIn>
 
           <div className="grid lg:grid-cols-3 gap-6 items-start">
-            {/* Free — smaller card */}
             <ScaleIn delay={0}>
               <div className="rounded-2xl bg-[#0A0F0D] border border-[#263329] p-6">
                 <p className="text-xs font-mono text-[#EFE9DA]/40 uppercase tracking-wider mb-2">Starter</p>
@@ -245,16 +226,14 @@ export default function HomePage() {
                   <span className="text-4xl font-bold text-[#EFE9DA]">$0</span>
                   <span className="text-sm text-[#EFE9DA]/40">/mo</span>
                 </div>
-                <p className="text-sm text-[#EFE9DA]/50 mb-6">For barbers just getting started.</p>
+                <p className="text-sm text-[#EFE9DA]/50 mb-6">For businesses just getting started.</p>
                 <Link href="/auth/signup">
-                  <Button variant="outline" className="w-full" size="md">
-                    Start Free
-                  </Button>
+                  <Button variant="outline" className="w-full" size="md">Start Free</Button>
                 </Link>
                 <ul className="mt-6 space-y-3 text-sm text-[#EFE9DA]/60">
                   <li className="flex items-center gap-2">
                     <svg className="w-4 h-4 text-[#E8B547]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
-                    Virtual queue
+                    Live queue
                   </li>
                   <li className="flex items-center gap-2">
                     <svg className="w-4 h-4 text-[#E8B547]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
@@ -262,13 +241,12 @@ export default function HomePage() {
                   </li>
                   <li className="flex items-center gap-2">
                     <svg className="w-4 h-4 text-[#E8B547]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
-                    1 barber
+                    1 location
                   </li>
                 </ul>
               </div>
             </ScaleIn>
 
-            {/* Pro — featured, larger card */}
             <ScaleIn delay={0.1}>
               <div className="rounded-2xl bg-[#0A0F0D] border-2 border-[#E8B547] p-6 lg:p-8 relative">
                 <div className="absolute -top-3 left-6 px-3 py-1 bg-[#E8B547] text-[#0A0F0D] text-xs font-bold rounded-full">
@@ -279,11 +257,9 @@ export default function HomePage() {
                   <span className="text-5xl font-bold text-[#EFE9DA]">$25</span>
                   <span className="text-sm text-[#EFE9DA]/40">/mo</span>
                 </div>
-                <p className="text-sm text-[#EFE9DA]/50 mb-6">For growing barbershops.</p>
+                <p className="text-sm text-[#EFE9DA]/50 mb-6">For growing businesses.</p>
                 <Link href="/auth/signup">
-                  <Button variant="primary" className="w-full" size="lg">
-                    Get Started
-                  </Button>
+                  <Button variant="primary" className="w-full" size="lg">Get Started</Button>
                 </Link>
                 <ul className="mt-6 space-y-3 text-sm text-[#EFE9DA]/60">
                   <li className="flex items-center gap-2">
@@ -300,17 +276,16 @@ export default function HomePage() {
                   </li>
                   <li className="flex items-center gap-2">
                     <svg className="w-4 h-4 text-[#E8B547]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
-                    Loyalty & points
+                    AI call assist
                   </li>
                   <li className="flex items-center gap-2">
                     <svg className="w-4 h-4 text-[#E8B547]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
-                    Up to 5 barbers
+                    Up to 5 staff
                   </li>
                 </ul>
               </div>
             </ScaleIn>
 
-            {/* Business — right side, compact */}
             <ScaleIn delay={0.2}>
               <div className="rounded-2xl bg-[#0A0F0D] border border-[#263329] p-6">
                 <p className="text-xs font-mono text-[#EFE9DA]/40 uppercase tracking-wider mb-2">Business</p>
@@ -320,9 +295,7 @@ export default function HomePage() {
                 </div>
                 <p className="text-sm text-[#EFE9DA]/50 mb-6">For chains and enterprises.</p>
                 <Link href="/auth/signup">
-                  <Button variant="outline" className="w-full" size="md">
-                    Contact Sales
-                  </Button>
+                  <Button variant="outline" className="w-full" size="md">Contact Sales</Button>
                 </Link>
                 <ul className="mt-6 space-y-3 text-sm text-[#EFE9DA]/60">
                   <li className="flex items-center gap-2">
@@ -331,7 +304,7 @@ export default function HomePage() {
                   </li>
                   <li className="flex items-center gap-2">
                     <svg className="w-4 h-4 text-[#E8B547]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
-                    Unlimited barbers
+                    Unlimited staff
                   </li>
                   <li className="flex items-center gap-2">
                     <svg className="w-4 h-4 text-[#E8B547]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
@@ -352,14 +325,14 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* ─── CTA ─── Final push */}
+      {/* ─── CTA ─── */}
       <section className="py-20 lg:py-28 px-4 sm:px-6 lg:px-8 border-t border-[#263329]/50">
         <FadeIn className="max-w-2xl mx-auto text-center">
           <h2 className="text-3xl md:text-4xl font-bold text-[#EFE9DA] mb-6 tracking-tight">
             Ready to stop losing customers to wait times?
           </h2>
           <p className="text-[#EFE9DA]/40 mb-8 max-w-md mx-auto">
-            Free to start. No credit card. Set up your shop in under 5 minutes.
+            Free to start. No credit card. Set up your business in under 5 minutes.
           </p>
           <Link href="/auth/signup">
             <Button variant="primary" size="lg">

@@ -46,7 +46,7 @@ export default function DashboardPage() {
       if (res.ok) {
         const data = await res.json()
         setQueue(data.queue)
-        setShopName(data.shop.name)
+        setShopName(data.business?.name || "Dashboard")
       }
     } catch (error) {
       console.error("Failed to fetch queue:", error)

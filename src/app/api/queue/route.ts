@@ -8,7 +8,7 @@ export async function GET() {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
 
-  const shop = await prisma.barberShop.findUnique({
+  const business = await prisma.business.findUnique({
     where: { ownerId: session.user.id },
     include: {
       queues: {
@@ -23,17 +23,17 @@ export async function GET() {
     },
   })
 
-  if (!shop) {
-    return NextResponse.json({ error: "Shop not found" }, { status: 404 })
+  if (!business) {
+    return NextResponse.json({ error: "Business not found" }, { status: 404 })
   }
 
-  const queue = shop.queues[0]
+  const queue = business.queues[0]
   const waiting = queue?.entries.filter((e) => e.status === "WAITING") || []
   const called = queue?.entries.filter((e) => e.status === "CALLED") || []
   const inProgress = queue?.entries.filter((e) => e.status === "IN_PROGRESS") || []
 
   return NextResponse.json({
-    shop: { id: shop.id, name: shop.name },
+    business: { id: business.id, name: business.name },
     queue: queue
       ? {
           id: queue.id,

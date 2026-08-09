@@ -16,9 +16,9 @@ export async function POST(req: Request) {
     )
   }
 
-  const shop = await prisma.barberShop.findUnique({ where: { id: shopId } })
-  if (!shop) {
-    return NextResponse.json({ error: "Shop not found" }, { status: 404 })
+  const business = await prisma.business.findUnique({ where: { id: shopId } })
+  if (!business) {
+    return NextResponse.json({ error: "Business not found" }, { status: 404 })
   }
 
   const service = await prisma.service.findUnique({ where: { id: serviceId } })
@@ -35,7 +35,7 @@ export async function POST(req: Request) {
       data: {
         name: customerName,
         phone: customerPhone,
-        email: `${customerPhone.replace(/\D/g, "")}@cutqueue.local`,
+        email: `${customerPhone.replace(/\D/g, "")}@queueforge.local`,
         role: "CUSTOMER",
       },
     })
@@ -45,7 +45,7 @@ export async function POST(req: Request) {
 
   const existingBooking = await prisma.booking.findFirst({
     where: {
-      shopId,
+      businessId: shopId,
       serviceId,
       scheduledAt,
       status: { in: ["PENDING", "CONFIRMED"] },
@@ -60,20 +60,20 @@ export async function POST(req: Request) {
     })
   }
 
-  const barber = await prisma.barberProfile.findFirst({
-    where: { shopId },
+  const staff = await prisma.staff.findFirst({
+    where: { businessId: shopId },
   })
 
-  if (!barber) {
-    return NextResponse.json({ error: "No barber available at this shop" }, { status: 404 })
+  if (!staff) {
+    return NextResponse.json({ error: "No staff available at this business" }, { status: 404 })
   }
 
   const booking = await prisma.booking.create({
     data: {
       customerId: customer.id,
-      barberId: barber.id,
+      staffId: staff.id,
       serviceId,
-      shopId,
+      businessId: shopId,
       scheduledAt,
       duration: service.duration,
       notes: "Booked via phone/automation",
@@ -81,7 +81,7 @@ export async function POST(req: Request) {
     },
     include: {
       service: true,
-      shop: { select: { name: true } },
+      business: { select: { name: true } },
     },
   })
 
@@ -95,7 +95,7 @@ export async function POST(req: Request) {
       time,
       duration: service.duration,
       price: service.price,
-      shop: shop.name,
+      business: business.name,
     },
   })
 }

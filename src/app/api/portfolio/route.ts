@@ -4,14 +4,14 @@ import { prisma } from "@/lib/prisma"
 
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url)
-  const barberId = searchParams.get("barberId")
+  const staffId = searchParams.get("staffId")
 
-  const where = barberId ? { barberId } : {}
+  const where = staffId ? { staffId } : {}
 
   const images = await prisma.portfolioImage.findMany({
     where,
     include: {
-      barber: {
+      staff: {
         include: { user: { select: { name: true } } },
       },
     },
@@ -28,22 +28,22 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
 
-  const profile = await prisma.barberProfile.findUnique({
+  const profile = await prisma.staff.findUnique({
     where: { userId: session.user.id },
   })
 
   if (!profile) {
-    return NextResponse.json({ error: "Barber profile not found" }, { status: 404 })
+    return NextResponse.json({ error: "Staff profile not found" }, { status: 404 })
   }
 
   const { imageUrl, caption, category, tags } = await req.json()
 
   const image = await prisma.portfolioImage.create({
     data: {
-      barberId: profile.id,
+      staffId: profile.id,
       imageUrl,
       caption,
-      category: category || "fade",
+      category: category || "general",
       tags: tags || [],
     },
   })

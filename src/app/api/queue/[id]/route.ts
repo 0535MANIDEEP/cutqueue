@@ -16,14 +16,14 @@ export async function PATCH(
 
   const entry = await prisma.queueEntry.findUnique({
     where: { id },
-    include: { queue: { include: { shop: true } } },
+    include: { queue: { include: { business: true } } },
   })
 
   if (!entry) {
     return NextResponse.json({ error: "Entry not found" }, { status: 404 })
   }
 
-  if (entry.queue.shop.ownerId !== session.user.id) {
+  if (entry.queue.business.ownerId !== session.user.id) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 403 })
   }
 

@@ -4,14 +4,14 @@ import { prisma } from "@/lib/prisma"
 
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url)
-  const shopId = searchParams.get("shopId")
+  const businessId = searchParams.get("businessId")
 
-  if (!shopId) {
-    return NextResponse.json({ error: "shopId required" }, { status: 400 })
+  if (!businessId) {
+    return NextResponse.json({ error: "businessId required" }, { status: 400 })
   }
 
   const services = await prisma.service.findMany({
-    where: { shopId, isActive: true },
+    where: { businessId, isActive: true },
     orderBy: { price: "asc" },
   })
 
@@ -24,24 +24,24 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
 
-  const shop = await prisma.barberShop.findUnique({
+  const business = await prisma.business.findUnique({
     where: { ownerId: session.user.id },
   })
 
-  if (!shop) {
-    return NextResponse.json({ error: "Shop not found" }, { status: 404 })
+  if (!business) {
+    return NextResponse.json({ error: "Business not found" }, { status: 404 })
   }
 
   const { name, description, duration, price, category } = await req.json()
 
   const service = await prisma.service.create({
     data: {
-      shopId: shop.id,
+      businessId: business.id,
       name,
       description,
       duration: duration || 30,
       price: price || 0,
-      category: category || "haircut",
+      category: category || "general",
     },
   })
 

@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma"
 
 export async function POST(req: Request) {
   try {
-    const { name, email, password, phone, shopName } = await req.json()
+    const { name, email, password, phone, shopName, templateSlug } = await req.json()
 
     if (!email || !password) {
       return NextResponse.json(
@@ -39,7 +39,7 @@ export async function POST(req: Request) {
         email,
         passwordHash,
         phone,
-        role: shopName ? "SHOP_OWNER" : "CUSTOMER",
+        role: shopName ? "BUSINESS_OWNER" : "CUSTOMER",
       },
     })
 
@@ -49,9 +49,21 @@ export async function POST(req: Request) {
         .replace(/[^a-z0-9]+/g, "-")
         .replace(/(^-|-$)/g, "")
 
-      await prisma.barberShop.create({
+      const template = await prisma.industryTemplate.findUnique({
+        where: { slug: templateSlug || "barbershop" },
+      })
+
+      if (!template) {
+        return NextResponse.json(
+          { error: "Industry template not found" },
+          { status: 400 }
+        )
+      }
+
+      const business = await prisma.business.create({
         data: {
           ownerId: user.id,
+          templateId: template.id,
           name: shopName,
           slug: `${slug}-${user.id.slice(0, 6)}`,
           phone: phone || "",
@@ -59,12 +71,14 @@ export async function POST(req: Request) {
           address: "",
           city: "",
           openingHours: {},
+          settings: {},
         },
       })
 
       await prisma.queue.create({
         data: {
-          shopId: (await prisma.barberShop.findUnique({ where: { ownerId: user.id } }))!.id,
+          businessId: business.id,
+          queueType: template.queueType as string,
         },
       })
     }

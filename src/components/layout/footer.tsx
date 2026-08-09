@@ -43,11 +43,11 @@ export function Footer() {
                 </svg>
               </div>
               <span className="text-xl font-bold text-[#EFE9DA]">
-                Cut<span className="text-[#E8B547]">Queue</span>
+                Queue<span className="text-[#E8B547]">Forge</span>
               </span>
             </Link>
             <p className="text-sm text-[#EFE9DA]/60 mb-4">
-              The modern queue and booking platform for barbershops.
+              Build your queue, skip the wait. For any business where people wait.
             </p>
           </div>
 
@@ -106,7 +106,7 @@ export function Footer() {
         {/* Bottom Bar */}
         <div className="mt-12 pt-8 border-t border-[#2A3F3A]/50 flex flex-col md:flex-row justify-between items-center gap-4">
           <p className="text-sm text-[#EFE9DA]/40" suppressHydrationWarning>
-            © {new Date().getFullYear()} CutQueue. All rights reserved.
+            © {new Date().getFullYear()} QueueForge. All rights reserved.
           </p>
           <div className="flex gap-4">
             {footerLinks.social.map((link) => (

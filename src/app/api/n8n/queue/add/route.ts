@@ -16,13 +16,13 @@ export async function POST(req: Request) {
     )
   }
 
-  const shop = await prisma.barberShop.findUnique({
+  const business = await prisma.business.findUnique({
     where: { id: shopId },
     include: { queues: true },
   })
 
-  if (!shop) {
-    return NextResponse.json({ error: "Shop not found" }, { status: 404 })
+  if (!business) {
+    return NextResponse.json({ error: "Business not found" }, { status: 404 })
   }
 
   let customer = await prisma.user.findFirst({
@@ -34,13 +34,13 @@ export async function POST(req: Request) {
       data: {
         name: customerName,
         phone: customerPhone,
-        email: `${customerPhone.replace(/\D/g, "")}@cutqueue.local`,
+        email: `${customerPhone.replace(/\D/g, "")}@queueforge.local`,
         role: "CUSTOMER",
       },
     })
   }
 
-  const queue = shop.queues[0]
+  const queue = business.queues[0]
   if (!queue) {
     return NextResponse.json({ error: "No queue found for shop" }, { status: 404 })
   }

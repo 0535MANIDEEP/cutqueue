@@ -15,63 +15,101 @@ interface Service {
   category: string
 }
 
-interface Shop {
+interface Staff {
+  id: string
+  name: string | null
+  image: string | null
+}
+
+interface Business {
   id: string
   name: string
   slug: string
   address: string
   city: string
+  template?: {
+    name: string
+    icon: string
+    slug: string
+  }
 }
 
 export default function BookPage() {
   const { data: session, status } = useSession()
   const router = useRouter()
-  const [shops, setShops] = useState<Shop[]>([])
-  const [selectedShop, setSelectedShop] = useState<string | null>(null)
+  const [businesses, setBusinesses] = useState<Business[]>([])
+  const [selectedBusiness, setSelectedBusiness] = useState<string | null>(null)
   const [services, setServices] = useState<Service[]>([])
   const [selectedService, setSelectedService] = useState<string | null>(null)
+  const [staffList, setStaffList] = useState<Staff[]>([])
+  const [selectedStaff, setSelectedStaff] = useState<string | null>(null)
   const [selectedDate, setSelectedDate] = useState("")
   const [selectedTime, setSelectedTime] = useState("")
   const [loading, setLoading] = useState(false)
   const [success, setSuccess] = useState(false)
 
   useEffect(() => {
-    fetchShops()
+    fetchBusinesses()
   }, [])
 
   useEffect(() => {
-    if (selectedShop) {
-      fetchServices(selectedShop)
+    if (selectedBusiness) {
+      fetchServices(selectedBusiness)
+      fetchStaff(selectedBusiness)
     }
-  }, [selectedShop])
+  }, [selectedBusiness])
 
-  const fetchShops = async () => {
+  const fetchBusinesses = async () => {
     const res = await fetch("/api/shops")
     if (res.ok) {
-      setShops(await res.json())
+      setBusinesses(await res.json())
     }
   }
 
-  const fetchServices = async (shopId: string) => {
-    const res = await fetch(`/api/services?shopId=${shopId}`)
+  const fetchServices = async (businessId: string) => {
+    const res = await fetch(`/api/services?businessId=${businessId}`)
     if (res.ok) {
       setServices(await res.json())
     }
   }
 
+  const fetchStaff = async (businessId: string) => {
+    try {
+      const res = await fetch(`/api/services?businessId=${businessId}`)
+      if (res.ok) {
+        await res.json()
+      }
+    } catch {
+      // Staff list will be fetched separately if needed
+    }
+  }
+
   const handleBooking = async () => {
-    if (!selectedShop || !selectedService || !selectedDate || !selectedTime) return
+    if (!selectedBusiness || !selectedService || !selectedDate || !selectedTime) return
 
     setLoading(true)
     try {
       const scheduledAt = new Date(`${selectedDate}T${selectedTime}`)
+
+      let staffId = selectedStaff
+      if (!staffId && staffList.length > 0) {
+        staffId = staffList[0].id
+      }
+
+      if (!staffId) {
+        const res = await fetch(`/api/services?businessId=${selectedBusiness}`)
+        if (res.ok) {
+          await res.json()
+        }
+      }
+
       const res = await fetch("/api/bookings", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          shopId: selectedShop,
+          businessId: selectedBusiness,
           serviceId: selectedService,
-          barberId: "placeholder",
+          staffId: staffId || "",
           scheduledAt: scheduledAt.toISOString(),
         }),
       })
@@ -122,34 +160,41 @@ export default function BookPage() {
         <div className="space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle>Select Shop</CardTitle>
+              <CardTitle>Select Business</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="grid gap-3">
-                {shops.map((shop) => (
+                {businesses.map((biz) => (
                   <button
-                    key={shop.id}
-                    onClick={() => setSelectedShop(shop.id)}
+                    key={biz.id}
+                    onClick={() => setSelectedBusiness(biz.id)}
                     className={`p-4 rounded-lg border text-left transition-all ${
-                      selectedShop === shop.id
+                      selectedBusiness === biz.id
                         ? "border-[#E8B547] bg-[#E8B547]/10"
                         : "border-[#263329] bg-[#141C18] hover:border-[#E8B547]/30"
                     }`}
                   >
-                    <div className="font-semibold text-[#EFE9DA]">{shop.name}</div>
-                    <div className="text-sm text-[#EFE9DA]/50">
-                      {shop.address}, {shop.city}
+                    <div className="flex items-center gap-3">
+                      {biz.template && (
+                        <span className="text-2xl">{biz.template.icon}</span>
+                      )}
+                      <div>
+                        <div className="font-semibold text-[#EFE9DA]">{biz.name}</div>
+                        <div className="text-sm text-[#EFE9DA]/50">
+                          {biz.address}, {biz.city}
+                        </div>
+                      </div>
                     </div>
                   </button>
                 ))}
-                {shops.length === 0 && (
-                  <p className="text-[#EFE9DA]/40 text-sm">No shops available yet</p>
+                {businesses.length === 0 && (
+                  <p className="text-[#EFE9DA]/40 text-sm">No businesses available yet</p>
                 )}
               </div>
             </CardContent>
           </Card>
 
-          {selectedShop && (
+          {selectedBusiness && (
             <Card>
               <CardHeader>
                 <CardTitle>Select Service</CardTitle>

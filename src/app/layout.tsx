@@ -7,23 +7,23 @@ import { Footer } from '@/components/layout/footer'
 import './globals.css'
 
 export const metadata: Metadata = {
-  title: 'CutQueue — Skip the Line, Book the Vibe',
+  title: 'QueueForge — Build Your Queue, Skip the Wait',
   description:
-    'The modern queue and booking platform for barbershops. Manage queues, bookings, and your portfolio — all in one place.',
-  keywords: ['barbershop', 'queue', 'booking', 'appointment', 'salon', 'barber'],
+    'The open platform for queue management, booking, and customer engagement. Free for barbershops, salons, clinics, auto shops, and any business where people wait.',
+  keywords: ['queue management', 'booking', 'appointment', 'salon', 'barber', 'dental', 'clinic', 'auto repair', 'government', 'bank'],
   openGraph: {
-    title: 'CutQueue — Skip the Line, Book the Vibe',
+    title: 'QueueForge — Build Your Queue, Skip the Wait',
     description:
-      'The modern queue and booking platform for barbershops.',
+      'The open platform for queue management, booking, and customer engagement.',
     type: 'website',
     locale: 'en_US',
-    siteName: 'CutQueue',
+    siteName: 'QueueForge',
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'CutQueue — Skip the Line, Book the Vibe',
+    title: 'QueueForge — Build Your Queue, Skip the Wait',
     description:
-      'The modern queue and booking platform for barbershops.',
+      'The open platform for queue management, booking, and customer engagement.',
   },
 }
 

@@ -75,7 +75,7 @@ export default function SignUpPage() {
               </svg>
             </div>
             <span className="text-2xl font-bold text-[#EFE9DA]">
-              Cut<span className="text-[#E8B547]">Queue</span>
+              Queue<span className="text-[#E8B547]">Forge</span>
             </span>
           </Link>
           <h1 className="text-2xl font-bold text-[#EFE9DA] mb-2">Create your account</h1>

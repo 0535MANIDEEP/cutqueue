@@ -8,10 +8,10 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
 
-  const { shopId, serviceType } = await req.json()
+  const { businessId, serviceType } = await req.json()
 
-  const queue = await prisma.queue.findUnique({
-    where: { shopId },
+  const queue = await prisma.queue.findFirst({
+    where: { businessId },
     include: {
       entries: {
         where: { status: { in: ["WAITING", "CALLED", "IN_PROGRESS"] } },

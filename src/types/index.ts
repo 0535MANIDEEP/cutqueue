@@ -1,9 +1,9 @@
-// @ts-nocheck
-export type {
+import type {
   User,
-  BarberShop,
-  BarberProfile,
+  Business,
+  Staff,
   Service,
+  StaffService,
   Booking,
   Queue,
   QueueEntry,
@@ -13,9 +13,32 @@ export type {
   Reward,
   Referral,
   Notification,
+  IndustryTemplate,
+  ApiKey,
+  Webhook,
 } from '../generated/prisma/client'
 
-export type UserRole = 'CUSTOMER' | 'BARBER' | 'SHOP_OWNER' | 'ADMIN'
+export type {
+  User,
+  Business,
+  Staff,
+  Service,
+  StaffService,
+  Booking,
+  Queue,
+  QueueEntry,
+  PortfolioImage,
+  Review,
+  CustomerPoints,
+  Reward,
+  Referral,
+  Notification,
+  IndustryTemplate,
+  ApiKey,
+  Webhook,
+}
+
+export type UserRole = 'CUSTOMER' | 'STAFF' | 'BUSINESS_OWNER' | 'ADMIN'
 
 export type BookingStatus =
   | 'PENDING'
@@ -32,7 +55,7 @@ export type Tier = 'BRONZE' | 'SILVER' | 'GOLD' | 'PLATINUM'
 export interface TimeSlot {
   time: string
   available: boolean
-  barberId?: string
+  staffId?: string
 }
 
 export interface DayHours {

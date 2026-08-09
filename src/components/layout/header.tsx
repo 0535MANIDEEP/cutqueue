@@ -34,12 +34,12 @@ export function Header() {
                   strokeLinecap="round"
                   strokeLinejoin="round"
                   strokeWidth={2}
-                  d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                  d="M13 10V3L4 14h7v7l9-11h-7z"
                 />
               </svg>
             </div>
             <span className="text-xl font-bold text-[#EFE9DA]">
-              Cut<span className="text-[#E8B547]">Queue</span>
+              Queue<span className="text-[#E8B547]">Forge</span>
             </span>
           </Link>
 

@@ -11,9 +11,9 @@ export async function GET() {
   const bookings = await prisma.booking.findMany({
     where: { customerId: session.user.id },
     include: {
-      barber: { include: { user: { select: { name: true, image: true } } } },
+      staff: { include: { user: { select: { name: true, image: true } } } },
       service: true,
-      shop: { select: { name: true, address: true } },
+      business: { select: { name: true, address: true } },
     },
     orderBy: { scheduledAt: "desc" },
     take: 20,
@@ -28,9 +28,9 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
 
-  const { barberId, serviceId, shopId, scheduledAt, notes } = await req.json()
+  const { staffId, serviceId, businessId, scheduledAt, notes } = await req.json()
 
-  if (!barberId || !serviceId || !shopId || !scheduledAt) {
+  if (!staffId || !serviceId || !businessId || !scheduledAt) {
     return NextResponse.json(
       { error: "Missing required fields" },
       { status: 400 }
@@ -47,7 +47,7 @@ export async function POST(req: Request) {
 
   const existingBooking = await prisma.booking.findFirst({
     where: {
-      barberId,
+      staffId,
       scheduledAt: new Date(scheduledAt),
       status: { in: ["PENDING", "CONFIRMED"] },
     },
@@ -63,9 +63,9 @@ export async function POST(req: Request) {
   const booking = await prisma.booking.create({
     data: {
       customerId: session.user.id!,
-      barberId,
+      staffId,
       serviceId,
-      shopId,
+      businessId,
       scheduledAt: new Date(scheduledAt),
       duration: service.duration,
       notes,
