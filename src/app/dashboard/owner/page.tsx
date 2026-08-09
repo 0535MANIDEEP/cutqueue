@@ -45,7 +45,7 @@ interface Booking {
   staff: { user: { name: string | null } }
 }
 
-type Tab = "queue" | "services" | "bookings" | "settings"
+type Tab = "queue" | "services" | "bookings" | "staff" | "settings" | "announcements"
 
 export default function OwnerDashboard() {
   const { data: session, status } = useSession()
@@ -58,11 +58,6 @@ export default function OwnerDashboard() {
   const [loading, setLoading] = useState(true)
   const [showAddService, setShowAddService] = useState(false)
   const [newService, setNewService] = useState({ name: "", duration: 30, price: 0, category: "general" })
-
-  useEffect(() => {
-    if (status === "unauthenticated") router.push("/auth/signin")
-    if (status === "authenticated") fetchAll()
-  }, [status, router])
 
   const fetchAll = async () => {
     try {
@@ -84,6 +79,11 @@ export default function OwnerDashboard() {
       setLoading(false)
     }
   }
+
+  useEffect(() => {
+    if (status === "unauthenticated") router.push("/auth/signin")
+    if (status === "authenticated") fetchAll()
+  }, [status, router])
 
   const updateEntry = async (id: string, action: string) => {
     try {
@@ -129,6 +129,8 @@ export default function OwnerDashboard() {
     { id: "queue", label: "Queue", count: queue?.waiting.length },
     { id: "services", label: "Services", count: services.length },
     { id: "bookings", label: "Bookings", count: bookings.length },
+    { id: "staff", label: "Staff" },
+    { id: "announcements", label: "Announcements" },
     { id: "settings", label: "Settings" },
   ]
 
@@ -188,7 +190,15 @@ export default function OwnerDashboard() {
           {tabs.map((t) => (
             <button
               key={t.id}
-              onClick={() => setTab(t.id)}
+              onClick={() => {
+                if (t.id === "settings") {
+                  router.push("/dashboard/owner/settings")
+                } else if (t.id === "announcements") {
+                  router.push("/dashboard/owner/announcements")
+                } else {
+                  setTab(t.id)
+                }
+              }}
               className={cn(
                 "px-4 py-2 rounded-lg text-sm font-medium transition-colors",
                 tab === t.id
@@ -409,12 +419,46 @@ export default function OwnerDashboard() {
           </Card>
         )}
 
+        {/* Staff Tab */}
+        {tab === "staff" && (
+          <div className="space-y-4">
+            <div className="flex justify-end">
+              <Button variant="primary" onClick={() => router.push("/dashboard/owner/staff")}>
+                Manage Staff
+              </Button>
+            </div>
+            <Card>
+              <CardContent className="text-center py-12">
+                <p className="text-[#EFE9DA]/40 text-sm">
+                  Go to the Staff Schedule page to manage availability and view staff details.
+                </p>
+              </CardContent>
+            </Card>
+          </div>
+        )}
+
         {/* Settings Tab */}
         {tab === "settings" && (
           <Card>
             <CardHeader><CardTitle>Business Settings</CardTitle></CardHeader>
             <CardContent>
-              <p className="text-[#EFE9DA]/40 text-sm">Business settings coming soon. For now, manage your business via the admin panel.</p>
+              <p className="text-[#EFE9DA]/40 text-sm mb-4">Manage your business information, opening hours, and preferences.</p>
+              <Button variant="primary" onClick={() => router.push("/dashboard/owner/settings")}>
+                Open Settings
+              </Button>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Announcements Tab */}
+        {tab === "announcements" && (
+          <Card>
+            <CardHeader><CardTitle>Announcements</CardTitle></CardHeader>
+            <CardContent>
+              <p className="text-[#EFE9DA]/40 text-sm mb-4">Create and manage announcements for your customers.</p>
+              <Button variant="primary" onClick={() => router.push("/dashboard/owner/announcements")}>
+                Manage Announcements
+              </Button>
             </CardContent>
           </Card>
         )}

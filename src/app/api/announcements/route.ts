@@ -39,7 +39,7 @@ export async function GET(req: Request) {
 export async function POST(req: Request) {
   try {
     const session = await auth()
-    if (!session?.user || session.user.role !== "BUSINESS_OWNER") {
+    if (!session?.user?.id || session.user.role !== "BUSINESS_OWNER") {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
@@ -50,7 +50,7 @@ export async function POST(req: Request) {
     }
 
     const business = await prisma.business.findFirst({
-      where: { ownerId: session.user.id! },
+      where: { ownerId: session.user.id },
     })
 
     if (!business) {
@@ -78,7 +78,7 @@ export async function POST(req: Request) {
 export async function DELETE(req: Request) {
   try {
     const session = await auth()
-    if (!session?.user || session.user.role !== "BUSINESS_OWNER") {
+    if (!session?.user?.id || session.user.role !== "BUSINESS_OWNER") {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
@@ -89,7 +89,7 @@ export async function DELETE(req: Request) {
     }
 
     const business = await prisma.business.findFirst({
-      where: { ownerId: session.user.id! },
+      where: { ownerId: session.user.id },
     })
 
     const announcement = await prisma.announcement.findUnique({

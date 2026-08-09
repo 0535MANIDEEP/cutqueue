@@ -5,12 +5,12 @@ import { prisma } from "@/lib/prisma"
 export async function GET() {
   try {
     const session = await auth()
-    if (!session?.user || session.user.role !== "BUSINESS_OWNER") {
+    if (!session?.user?.id || session.user.role !== "BUSINESS_OWNER") {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
     const business = await prisma.business.findFirst({
-      where: { ownerId: session.user.id! },
+      where: { ownerId: session.user.id },
       include: {
         template: { select: { name: true, slug: true } },
         _count: { select: { staff: true, services: true, bookings: true } },
@@ -31,12 +31,12 @@ export async function GET() {
 export async function PATCH(req: Request) {
   try {
     const session = await auth()
-    if (!session?.user || session.user.role !== "BUSINESS_OWNER") {
+    if (!session?.user?.id || session.user.role !== "BUSINESS_OWNER") {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
     const business = await prisma.business.findFirst({
-      where: { ownerId: session.user.id! },
+      where: { ownerId: session.user.id },
     })
 
     if (!business) {

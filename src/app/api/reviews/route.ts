@@ -32,7 +32,7 @@ export async function GET(req: Request) {
 export async function POST(req: Request) {
   try {
     const session = await auth()
-    if (!session?.user) {
+    if (!session?.user?.id) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
@@ -53,7 +53,7 @@ export async function POST(req: Request) {
 
     const review = await prisma.review.create({
       data: {
-        customerId: session.user.id!,
+        customerId: session.user.id,
         businessId,
         staffId,
         rating: Math.round(rating),

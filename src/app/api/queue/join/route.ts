@@ -5,7 +5,7 @@ import { prisma } from "@/lib/prisma"
 export async function POST(req: Request) {
   try {
     const session = await auth()
-    if (!session?.user) {
+    if (!session?.user?.id) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
@@ -25,7 +25,7 @@ export async function POST(req: Request) {
     }
 
     const existingEntry = queue.entries.find(
-      (e) => e.customerId === session.user!.id
+      (e) => e.customerId === session.user.id
     )
     if (existingEntry) {
       return NextResponse.json(
@@ -42,7 +42,7 @@ export async function POST(req: Request) {
     const entry = await prisma.queueEntry.create({
       data: {
         queueId: queue.id,
-        customerId: session.user.id!,
+        customerId: session.user.id,
         ticketNumber: maxTicket + 1,
         serviceType,
         status: "WAITING",
