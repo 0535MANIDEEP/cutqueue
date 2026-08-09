@@ -60,6 +60,13 @@ export function Header() {
           <div className="hidden md:flex items-center gap-3">
             {session ? (
               <>
+                {session.user?.role === "ADMIN" && (
+                  <Link href="/admin">
+                    <Button variant="ghost" size="sm">
+                      Admin
+                    </Button>
+                  </Link>
+                )}
                 <Link href="/dashboard">
                   <Button variant="ghost" size="sm">
                     Dashboard
@@ -132,6 +139,13 @@ export function Header() {
               <div className="flex gap-2 mt-2 pt-2 border-t border-[#2A3F3A]/50">
                 {session ? (
                   <>
+                    {session.user?.role === "ADMIN" && (
+                      <Link href="/admin" className="flex-1">
+                        <Button variant="outline" size="sm" className="w-full">
+                          Admin
+                        </Button>
+                      </Link>
+                    )}
                     <Link href="/dashboard" className="flex-1">
                       <Button variant="outline" size="sm" className="w-full">
                         Dashboard
