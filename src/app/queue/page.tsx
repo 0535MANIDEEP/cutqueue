@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useSession } from 'next-auth/react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
@@ -8,110 +9,176 @@ import { cn } from '@/lib/utils'
 interface QueueEntry {
   id: string
   ticketNumber: number
-  name: string
-  service: string
-  status: 'waiting' | 'called' | 'in-progress' | 'completed'
-  joinedAt: Date
+  customer: { name: string }
+  serviceType?: string
+  status: 'WAITING' | 'CALLED' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED'
+  joinedAt: string
 }
 
-const BASE_TIME = 1700000000000
-const mockQueue: QueueEntry[] = [
-  { id: '1', ticketNumber: 1001, name: 'Marcus J.', service: 'Fade + Beard', status: 'completed', joinedAt: new Date(BASE_TIME) },
-  { id: '2', ticketNumber: 1002, name: 'Andre W.', service: 'Classic Cut', status: 'in-progress', joinedAt: new Date(BASE_TIME + 15 * 60000) },
-  { id: '3', ticketNumber: 1003, name: 'DeShawn M.', service: 'Skin Fade', status: 'called', joinedAt: new Date(BASE_TIME + 25 * 60000) },
-  { id: '4', ticketNumber: 1004, name: 'Chris P.', service: 'Beard Trim', status: 'waiting', joinedAt: new Date(BASE_TIME + 30 * 60000) },
-  { id: '5', ticketNumber: 1005, name: 'Jamal K.', service: 'Kids Cut', status: 'waiting', joinedAt: new Date(BASE_TIME + 35 * 60000) },
-  { id: '6', ticketNumber: 1006, name: 'Tyler R.', service: 'Fade + Line', status: 'waiting', joinedAt: new Date(BASE_TIME + 40 * 60000) },
-]
+interface QueueData {
+  queue: { id: string; isActive: boolean } | null
+  entries: QueueEntry[]
+  waitingCount: number
+  estimatedWait: number
+}
 
 const statusColors = {
-  waiting: 'bg-[#2A3F3A] text-[#EFE9DA]',
-  called: 'bg-[#E8B547] text-[#0F1B17] animate-pulse-gold',
-  'in-progress': 'bg-green-600 text-white',
-  completed: 'bg-[#1E2E29] text-[#EFE9DA]/40 line-through',
+  WAITING: 'bg-[#2A3F3A] text-[#EFE9DA]',
+  CALLED: 'bg-[#E8B547] text-[#0F1B17] animate-pulse',
+  IN_PROGRESS: 'bg-green-600 text-white',
+  COMPLETED: 'bg-[#1E2E29] text-[#EFE9DA]/40 line-through',
+  CANCELLED: 'bg-red-900/30 text-red-400/50',
 }
 
 const statusLabels = {
-  waiting: 'Waiting',
-  called: 'Called',
-  'in-progress': 'In Progress',
-  completed: 'Done',
+  WAITING: 'Waiting',
+  CALLED: 'Called',
+  IN_PROGRESS: 'In Progress',
+  COMPLETED: 'Done',
+  CANCELLED: 'Cancelled',
 }
 
 export default function QueuePage() {
-  const [queue, setQueue] = useState<QueueEntry[]>(mockQueue)
-  const [currentTime, setCurrentTime] = useState(() => new Date(BASE_TIME + 40 * 60000))
+  const { data: session } = useSession()
+  const [queueData, setQueueData] = useState<QueueData | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [joining, setJoining] = useState(false)
+  const [selectedBusiness, setSelectedBusiness] = useState('')
+  const [businesses, setBusinesses] = useState<{ id: string; name: string }[]>([])
+  const [currentTime, setCurrentTime] = useState(new Date())
   const [mounted, setMounted] = useState(false)
 
   useEffect(() => {
     setMounted(true)
-    setCurrentTime(new Date())
-    const timer = setInterval(() => {
-      setCurrentTime(new Date())
-    }, 1000)
+    fetchBusinesses()
+    const timer = setInterval(() => setCurrentTime(new Date()), 1000)
     return () => clearInterval(timer)
   }, [])
 
-  const waitingCount = queue.filter((e) => e.status === 'waiting').length
-  const estimatedWait = waitingCount * 20 // 20 min per customer
+  useEffect(() => {
+    if (selectedBusiness) {
+      fetchQueue()
+      const interval = setInterval(fetchQueue, 10000)
+      return () => clearInterval(interval)
+    }
+  }, [selectedBusiness])
 
-  const formatTime = (date: Date) => {
-    return date.toLocaleTimeString('en-US', {
-      hour: '2-digit',
-      minute: '2-digit',
-    })
+  const fetchBusinesses = async () => {
+    try {
+      const res = await fetch('/api/shops')
+      if (res.ok) {
+        const data = await res.json()
+        setBusinesses(data)
+        if (data.length > 0) setSelectedBusiness(data[0].id)
+      }
+    } catch (error) {
+      console.error('Failed to fetch businesses:', error)
+    } finally {
+      setLoading(false)
+    }
   }
 
-  const formatWaitTime = (joinedAt: Date) => {
-    const diff = Math.floor((currentTime.getTime() - joinedAt.getTime()) / 60000)
+  const fetchQueue = async () => {
+    if (!selectedBusiness) return
+    try {
+      const res = await fetch(`/api/queue?businessId=${selectedBusiness}`)
+      if (res.ok) {
+        const data = await res.json()
+        setQueueData(data)
+      }
+    } catch (error) {
+      console.error('Failed to fetch queue:', error)
+    }
+  }
+
+  const joinQueue = async () => {
+    if (!selectedBusiness || !session?.user) return
+    setJoining(true)
+    try {
+      const res = await fetch('/api/queue', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ businessId: selectedBusiness }),
+      })
+      if (res.ok) {
+        fetchQueue()
+      } else {
+        const err = await res.json()
+        alert(err.error || 'Failed to join queue')
+      }
+    } catch (error) {
+      console.error('Failed to join queue:', error)
+    } finally {
+      setJoining(false)
+    }
+  }
+
+  const formatTime = (date: Date) => {
+    return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
+  }
+
+  const formatWaitTime = (joinedAt: string) => {
+    const diff = Math.floor((currentTime.getTime() - new Date(joinedAt).getTime()) / 60000)
     if (diff < 1) return 'Just now'
     return `${diff}m ago`
   }
 
+  const myEntry = queueData?.entries.find(
+    (e) => e.customer.name === session?.user?.name && ['WAITING', 'CALLED', 'IN_PROGRESS'].includes(e.status)
+  )
+
   return (
     <div className="min-h-screen bg-[#0F1B17] pt-20 pb-10 px-4">
       <div className="max-w-4xl mx-auto">
-        {/* Header */}
         <div className="text-center mb-8">
-          <h1 className="text-3xl md:text-4xl font-bold text-[#EFE9DA] mb-2">
-            Live Queue
-          </h1>
-          <p className="text-[#EFE9DA]/60">
-            Real-time queue status • Updated every second
-          </p>
+          <h1 className="text-3xl md:text-4xl font-bold text-[#EFE9DA] mb-2">Live Queue</h1>
+          <p className="text-[#EFE9DA]/60">Real-time queue status</p>
         </div>
 
-        {/* Stats Cards */}
+        {businesses.length > 0 && (
+          <div className="mb-6">
+            <label className="text-sm text-[#EFE9DA]/60 mb-2 block">Select Business</label>
+            <select
+              value={selectedBusiness}
+              onChange={(e) => setSelectedBusiness(e.target.value)}
+              className="w-full md:w-auto px-4 py-2.5 rounded-lg bg-[#1E2E29] border border-[#2A3F3A] text-[#EFE9DA] focus:outline-none focus:border-[#E8B547]"
+            >
+              {businesses.map((b) => (
+                <option key={b.id} value={b.id}>{b.name}</option>
+              ))}
+            </select>
+          </div>
+        )}
+
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
           <Card>
             <CardContent className="text-center">
-              <div className="text-3xl font-bold text-[#E8B547]">{waitingCount}</div>
+              <div className="text-3xl font-bold text-[#E8B547]">{queueData?.waitingCount ?? 0}</div>
               <div className="text-sm text-[#EFE9DA]/60">Waiting</div>
             </CardContent>
           </Card>
           <Card>
             <CardContent className="text-center">
-              <div className="text-3xl font-bold text-green-500">{estimatedWait}m</div>
+              <div className="text-3xl font-bold text-green-500">{queueData?.estimatedWait ?? 0}m</div>
               <div className="text-sm text-[#EFE9DA]/60">Est. Wait</div>
             </CardContent>
           </Card>
           <Card>
             <CardContent className="text-center">
               <div className="text-3xl font-bold text-[#EFE9DA]">
-                {queue.filter((e) => e.status === 'completed').length}
+                {queueData?.entries.filter((e) => e.status === 'COMPLETED').length ?? 0}
               </div>
               <div className="text-sm text-[#EFE9DA]/60">Completed</div>
             </CardContent>
           </Card>
           <Card>
             <CardContent className="text-center">
-              <div className="text-3xl font-bold text-[#EFE9DA]">{formatTime(currentTime)}</div>
+              <div className="text-3xl font-bold text-[#EFE9DA]">{mounted ? formatTime(currentTime) : '--:--'}</div>
               <div className="text-sm text-[#EFE9DA]/60">Current Time</div>
             </CardContent>
           </Card>
         </div>
 
-        {/* Queue Display */}
         <Card>
           <CardHeader>
             <div className="flex items-center justify-between">
@@ -123,94 +190,93 @@ export default function QueuePage() {
             </div>
           </CardHeader>
           <CardContent>
-            <div className="space-y-3">
-              {queue.map((entry, index) => (
-                <div
-                  key={entry.id}
-                  className={cn(
-                    'flex items-center justify-between p-4 rounded-lg border transition-all duration-300',
-                    entry.status === 'called'
-                      ? 'border-[#E8B547] bg-[#E8B547]/10'
-                      : 'border-[#2A3F3A]/50 bg-[#1E2E29]',
-                    entry.status === 'completed' && 'opacity-50'
-                  )}
-                >
-                  <div className="flex items-center gap-4">
-                    <div
-                      className={cn(
-                        'w-12 h-12 rounded-lg flex items-center justify-center font-bold text-lg',
-                        statusColors[entry.status]
-                      )}
-                    >
-                      {entry.ticketNumber}
+            {loading ? (
+              <div className="text-center py-8 text-[#EFE9DA]/50">Loading queue...</div>
+            ) : queueData?.entries.length === 0 ? (
+              <div className="text-center py-8">
+                <p className="text-[#EFE9DA]/60 mb-4">No one in queue yet</p>
+                <p className="text-sm text-[#EFE9DA]/40">Be the first to join!</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {queueData?.entries.map((entry) => (
+                  <div
+                    key={entry.id}
+                    className={cn(
+                      'flex items-center justify-between p-4 rounded-lg border transition-all duration-300',
+                      entry.status === 'CALLED'
+                        ? 'border-[#E8B547] bg-[#E8B547]/10'
+                        : 'border-[#2A3F3A]/50 bg-[#1E2E29]',
+                      entry.status === 'COMPLETED' && 'opacity-50'
+                    )}
+                  >
+                    <div className="flex items-center gap-4">
+                      <div
+                        className={cn(
+                          'w-12 h-12 rounded-lg flex items-center justify-center font-bold text-lg',
+                          statusColors[entry.status]
+                        )}
+                      >
+                        {String(entry.ticketNumber).padStart(4, '0')}
+                      </div>
+                      <div>
+                        <div className="font-medium text-[#EFE9DA]">
+                          {entry.customer.name}
+                          {myEntry?.id === entry.id && (
+                            <span className="ml-2 text-xs text-[#E8B547]">(You)</span>
+                          )}
+                        </div>
+                        <div className="text-sm text-[#EFE9DA]/60">
+                          {entry.serviceType || 'General'}
+                        </div>
+                      </div>
                     </div>
-                    <div>
-                      <div className="font-medium text-[#EFE9DA]">{entry.name}</div>
-                      <div className="text-sm text-[#EFE9DA]/60">{entry.service}</div>
+                    <div className="flex items-center gap-4">
+                      <div className="text-right">
+                        <div className="text-sm text-[#EFE9DA]/60">{formatWaitTime(entry.joinedAt)}</div>
+                      </div>
+                      <span
+                        className={cn(
+                          'px-3 py-1 rounded-full text-xs font-medium',
+                          statusColors[entry.status]
+                        )}
+                      >
+                        {statusLabels[entry.status]}
+                      </span>
                     </div>
                   </div>
-                  <div className="flex items-center gap-4">
-                    <div className="text-right">
-                      <div className="text-sm text-[#EFE9DA]/60">{formatWaitTime(entry.joinedAt)}</div>
-                    </div>
-                    <span
-                      className={cn(
-                        'px-3 py-1 rounded-full text-xs font-medium',
-                        statusColors[entry.status]
-                      )}
-                    >
-                      {statusLabels[entry.status]}
-                    </span>
-                  </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
 
-            {/* Join Queue Button */}
             <div className="mt-6 pt-6 border-t border-[#2A3F3A]/50">
-              <Button variant="primary" size="lg" className="w-full">
-                Join Queue — Ticket #{queue.length > 0 ? Math.max(...queue.map((e) => e.ticketNumber)) + 1 : 1001}
-              </Button>
-              <p className="text-center text-sm text-[#EFE9DA]/40 mt-3">
-                You&apos;ll be notified when it&apos;s your turn
-              </p>
+              {!session?.user ? (
+                <Button variant="primary" size="lg" className="w-full" disabled>
+                  Sign in to Join Queue
+                </Button>
+              ) : myEntry ? (
+                <div className="text-center">
+                  <p className="text-[#E8B547] font-medium mb-2">
+                    You&apos;re in queue! Ticket #{myEntry.ticketNumber}
+                  </p>
+                  <p className="text-sm text-[#EFE9DA]/50">
+                    Status: {statusLabels[myEntry.status]}
+                  </p>
+                </div>
+              ) : (
+                <Button
+                  variant="primary"
+                  size="lg"
+                  className="w-full"
+                  onClick={joinQueue}
+                  disabled={joining || !selectedBusiness}
+                >
+                  {joining ? 'Joining...' : 'Join Queue'}
+                </Button>
+              )}
             </div>
           </CardContent>
         </Card>
-
-        {/* Queue Info */}
-        <div className="mt-8 grid md:grid-cols-2 gap-4">
-          <Card>
-            <CardContent>
-              <h3 className="font-semibold text-[#EFE9DA] mb-2">How it Works</h3>
-              <ol className="text-sm text-[#EFE9DA]/60 space-y-2">
-                <li>1. Tap &quot;Join Queue&quot; to get your ticket</li>
-                <li>2. Wait comfortably — no standing in line</li>
-                <li>3. Get notified when it&apos;s almost your turn</li>
-                <li>4. Arrive when your ticket is called</li>
-              </ol>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent>
-              <h3 className="font-semibold text-[#EFE9DA] mb-2">Shop Hours</h3>
-              <div className="text-sm text-[#EFE9DA]/60 space-y-1">
-                <div className="flex justify-between">
-                  <span>Mon - Fri</span>
-                  <span>9:00 AM - 7:00 PM</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Saturday</span>
-                  <span>9:00 AM - 5:00 PM</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Sunday</span>
-                  <span>Closed</span>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
       </div>
     </div>
   )

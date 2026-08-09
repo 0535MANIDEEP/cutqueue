@@ -16,6 +16,10 @@ import type {
   IndustryTemplate,
   ApiKey,
   Webhook,
+  Complaint,
+  Announcement,
+  CancellationPolicy,
+  NoShow,
 } from '../generated/prisma/client'
 
 export type {
@@ -36,6 +40,10 @@ export type {
   IndustryTemplate,
   ApiKey,
   Webhook,
+  Complaint,
+  Announcement,
+  CancellationPolicy,
+  NoShow,
 }
 
 export type UserRole = 'CUSTOMER' | 'STAFF' | 'BUSINESS_OWNER' | 'ADMIN'
@@ -51,6 +59,18 @@ export type BookingStatus =
 export type QueueStatus = 'WAITING' | 'CALLED' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED'
 
 export type Tier = 'BRONZE' | 'SILVER' | 'GOLD' | 'PLATINUM'
+
+export type ComplaintCategory =
+  | 'SERVICE_QUALITY'
+  | 'WAIT_TIME'
+  | 'STAFF_BEHAVIOR'
+  | 'PRICING'
+  | 'CLEANLINESS'
+  | 'OTHER'
+
+export type ComplaintStatus = 'OPEN' | 'IN_PROGRESS' | 'RESOLVED' | 'DISMISSED'
+
+export type AnnouncementType = 'GENERAL' | 'PROMOTION' | 'CLOSURE' | 'HOLIDAY' | 'EVENT'
 
 export interface TimeSlot {
   time: string

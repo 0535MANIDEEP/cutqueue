@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { useSession, signOut } from 'next-auth/react'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 
 const publicLinks = [
@@ -15,7 +15,17 @@ const publicLinks = [
 export function Header() {
   const { data: session } = useSession()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const [unreadCount, setUnreadCount] = useState(0)
   const role = session?.user?.role as string | undefined
+
+  useEffect(() => {
+    if (session?.user) {
+      fetch('/api/notifications')
+        .then((res) => res.json())
+        .then((data) => setUnreadCount(data.unreadCount || 0))
+        .catch(() => {})
+    }
+  }, [session])
 
   const getDashboardLabel = () => {
     switch (role) {
@@ -39,7 +49,6 @@ export function Header() {
     <header className="fixed top-0 left-0 right-0 z-50 bg-[#0F1B17]/90 backdrop-blur-md border-b border-[#2A3F3A]/50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
-          {/* Logo */}
           <Link href="/" className="flex items-center gap-2">
             <div className="w-8 h-8 rounded-lg bg-[#E8B547] flex items-center justify-center">
               <svg className="w-5 h-5 text-[#0F1B17]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -51,7 +60,6 @@ export function Header() {
             </span>
           </Link>
 
-          {/* Desktop Navigation */}
           <nav className="hidden md:flex items-center gap-6">
             {publicLinks.map((link) => (
               <Link
@@ -64,7 +72,6 @@ export function Header() {
             ))}
           </nav>
 
-          {/* Desktop Actions */}
           <div className="hidden md:flex items-center gap-3">
             {session ? (
               <>
@@ -73,8 +80,26 @@ export function Header() {
                     <Button variant="ghost" size="sm">Admin</Button>
                   </Link>
                 )}
+                <Link href="/reviews">
+                  <Button variant="ghost" size="sm">Reviews</Button>
+                </Link>
+                <Link href="/complaints">
+                  <Button variant="ghost" size="sm">Complaints</Button>
+                </Link>
                 <Link href={getDashboardHref()}>
                   <Button variant="ghost" size="sm">{getDashboardLabel()}</Button>
+                </Link>
+                <Link href="/notifications" className="relative">
+                  <Button variant="ghost" size="sm">
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0" />
+                    </svg>
+                    {unreadCount > 0 && (
+                      <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-[#E8B547] text-[#0F1B17] text-xs flex items-center justify-center font-bold">
+                        {unreadCount > 9 ? '9+' : unreadCount}
+                      </span>
+                    )}
+                  </Button>
                 </Link>
                 <Button variant="outline" size="sm" onClick={() => signOut({ callbackUrl: '/' })}>
                   Sign Out
@@ -92,7 +117,6 @@ export function Header() {
             )}
           </div>
 
-          {/* Mobile Menu Button */}
           <button
             className="md:hidden p-2 text-[#EFE9DA]"
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
@@ -107,7 +131,6 @@ export function Header() {
           </button>
         </div>
 
-        {/* Mobile Menu */}
         {mobileMenuOpen && (
           <div className="md:hidden py-4 border-t border-[#2A3F3A]/50">
             <nav className="flex flex-col gap-2">
@@ -121,6 +144,19 @@ export function Header() {
                   {link.label}
                 </Link>
               ))}
+              {session && (
+                <>
+                  <Link href="/reviews" className="px-3 py-2 text-[#EFE9DA]/70 hover:text-[#EFE9DA] hover:bg-[#1E2E29] rounded-lg transition-colors" onClick={() => setMobileMenuOpen(false)}>
+                    Reviews
+                  </Link>
+                  <Link href="/complaints" className="px-3 py-2 text-[#EFE9DA]/70 hover:text-[#EFE9DA] hover:bg-[#1E2E29] rounded-lg transition-colors" onClick={() => setMobileMenuOpen(false)}>
+                    Complaints
+                  </Link>
+                  <Link href="/notifications" className="px-3 py-2 text-[#EFE9DA]/70 hover:text-[#EFE9DA] hover:bg-[#1E2E29] rounded-lg transition-colors" onClick={() => setMobileMenuOpen(false)}>
+                    Notifications {unreadCount > 0 && `(${unreadCount})`}
+                  </Link>
+                </>
+              )}
               <div className="flex gap-2 mt-2 pt-2 border-t border-[#2A3F3A]/50">
                 {session ? (
                   <>

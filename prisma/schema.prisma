@@ -30,6 +30,8 @@ model User {
   bookings      Booking[]
   queueEntries  QueueEntry[]
   reviews       Review[]
+  complaints    Complaint[]
+  noShows       NoShow[]
   customerPoints CustomerPoints?
   referralsMade Referral[]    @relation("Referrer")
   referralsReceived Referral[] @relation("Referred")
@@ -125,6 +127,10 @@ model Business {
   queues        Queue[]
   bookings      Booking[]
   reviews       Review[]
+  complaints    Complaint[]
+  announcements Announcement[]
+  cancellationPolicy CancellationPolicy?
+  noShows       NoShow[]
 
   @@unique([ownerId])
   @@index([slug])
@@ -429,6 +435,91 @@ model Webhook {
 }
 
 // ──────────────────────────────────────────────
+// COMPLAINTS & FEEDBACK
+// ──────────────────────────────────────────────
+
+model Complaint {
+  id            String          @id @default(cuid())
+  customerId    String
+  businessId    String
+  bookingId     String?
+  category      ComplaintCategory
+  subject       String
+  description   String
+  status        ComplaintStatus @default(OPEN)
+  priority      ComplaintPriority @default(NORMAL)
+  response      String?
+  respondedAt   DateTime?
+  resolvedAt    DateTime?
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+
+  customer      User            @relation(fields: [customerId], references: [id])
+  business      Business        @relation(fields: [businessId], references: [id])
+
+  @@index([businessId])
+  @@index([status])
+}
+
+// ──────────────────────────────────────────────
+// BUSINESS ANNOUNCEMENTS
+// ──────────────────────────────────────────────
+
+model Announcement {
+  id          String    @id @default(cuid())
+  businessId  String
+  title       String
+  content     String
+  type        AnnouncementType @default(GENERAL)
+  isActive    Boolean   @default(true)
+  startsAt    DateTime?
+  expiresAt   DateTime?
+  createdAt   DateTime  @default(now())
+
+  business    Business  @relation(fields: [businessId], references: [id])
+
+  @@index([businessId])
+}
+
+// ──────────────────────────────────────────────
+// CANCELLATION POLICY
+// ──────────────────────────────────────────────
+
+model CancellationPolicy {
+  id                String    @id @default(cuid())
+  businessId        String    @unique
+  freeCancellationHours Int   @default(24) // hours before appointment
+  lateCancelFee     Float     @default(0)
+  noShowFee         Float     @default(0)
+  maxNoShowsBeforeBlock Int  @default(3)
+  isActive          Boolean   @default(true)
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  business          Business  @relation(fields: [businessId], references: [id])
+}
+
+// ──────────────────────────────────────────────
+// NO-SHOW TRACKING
+// ──────────────────────────────────────────────
+
+model NoShow {
+  id          String    @id @default(cuid())
+  customerId  String
+  businessId  String
+  bookingId   String
+  reason      String?
+  isWaived    Boolean   @default(false)
+  createdAt   DateTime  @default(now())
+
+  customer    User      @relation(fields: [customerId], references: [id])
+  business    Business  @relation(fields: [businessId], references: [id])
+
+  @@index([customerId])
+  @@index([businessId])
+}
+
+// ──────────────────────────────────────────────
 // ENUMS
 // ──────────────────────────────────────────────
 
@@ -500,4 +591,37 @@ enum NotificationType {
   REFERRAL_COMPLETE
   PROMOTIONAL
   SYSTEM
+  COMPLAINT_UPDATE
+  ANNOUNCEMENT
+}
+
+enum ComplaintCategory {
+  SERVICE_QUALITY
+  WAIT_TIME
+  STAFF_BEHAVIOR
+  PRICING
+  CLEANLINESS
+  OTHER
+}
+
+enum ComplaintStatus {
+  OPEN
+  IN_PROGRESS
+  RESOLVED
+  DISMISSED
+}
+
+enum ComplaintPriority {
+  LOW
+  NORMAL
+  HIGH
+  URGENT
+}
+
+enum AnnouncementType {
+  GENERAL
+  PROMOTION
+  CLOSURE
+  HOLIDAY
+  EVENT
 }
