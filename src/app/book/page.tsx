@@ -19,6 +19,8 @@ interface Staff {
   id: string
   name: string | null
   image: string | null
+  rating: number
+  specialties: string[]
 }
 
 interface Business {
@@ -27,11 +29,27 @@ interface Business {
   slug: string
   address: string
   city: string
+  openingHours: Record<string, { open: string; close: string; closed?: boolean }> | null
   template?: {
     name: string
     icon: string
     slug: string
   }
+}
+
+function generateTimeSlots(open: string, close: string, duration: number): string[] {
+  const slots: string[] = []
+  const [openH, openM] = open.split(":").map(Number)
+  const [closeH, closeM] = close.split(":").map(Number)
+  const startMinutes = openH * 60 + openM
+  const endMinutes = closeH * 60 + closeM
+
+  for (let m = startMinutes; m + duration <= endMinutes; m += 30) {
+    const h = Math.floor(m / 60)
+    const min = m % 60
+    slots.push(`${String(h).padStart(2, "0")}:${String(min).padStart(2, "0")}`)
+  }
+  return slots
 }
 
 export default function BookPage() {
@@ -47,6 +65,7 @@ export default function BookPage() {
   const [selectedTime, setSelectedTime] = useState("")
   const [loading, setLoading] = useState(false)
   const [success, setSuccess] = useState(false)
+  const [error, setError] = useState("")
 
   useEffect(() => {
     fetchBusinesses()
@@ -56,8 +75,15 @@ export default function BookPage() {
     if (selectedBusiness) {
       fetchServices(selectedBusiness)
       fetchStaff(selectedBusiness)
+      setSelectedService(null)
+      setSelectedStaff(null)
+      setSelectedTime("")
     }
   }, [selectedBusiness])
+
+  useEffect(() => {
+    setSelectedTime("")
+  }, [selectedDate, selectedService])
 
   const fetchBusinesses = async () => {
     const res = await fetch("/api/shops")
@@ -75,19 +101,42 @@ export default function BookPage() {
 
   const fetchStaff = async (businessId: string) => {
     try {
-      const res = await fetch(`/api/services?businessId=${businessId}`)
+      const res = await fetch(`/api/staff?businessId=${businessId}`)
       if (res.ok) {
-        await res.json()
+        setStaffList(await res.json())
       }
     } catch {
-      // Staff list will be fetched separately if needed
+      setStaffList([])
     }
+  }
+
+  const selectedBiz = businesses.find((b) => b.id === selectedBusiness)
+  const selectedSvc = services.find((s) => s.id === selectedService)
+
+  const getTimeSlots = (): string[] => {
+    if (!selectedBiz?.openingHours || !selectedDate) {
+      return ["09:00", "09:30", "10:00", "10:30", "11:00", "11:30", "12:00", "12:30",
+        "13:00", "13:30", "14:00", "14:30", "15:00", "15:30", "16:00", "16:30", "17:00", "17:30"]
+    }
+
+    const dayNames = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"]
+    const day = dayNames[new Date(selectedDate).getDay()]
+    const hours = selectedBiz.openingHours[day]
+
+    if (!hours || hours.closed) {
+      return ["09:00", "09:30", "10:00", "10:30", "11:00", "11:30", "12:00", "12:30",
+        "13:00", "13:30", "14:00", "14:30", "15:00", "15:30", "16:00", "16:30", "17:00", "17:30"]
+    }
+
+    const duration = selectedSvc?.duration || 30
+    return generateTimeSlots(hours.open, hours.close, duration)
   }
 
   const handleBooking = async () => {
     if (!selectedBusiness || !selectedService || !selectedDate || !selectedTime) return
 
     setLoading(true)
+    setError("")
     try {
       const scheduledAt = new Date(`${selectedDate}T${selectedTime}`)
 
@@ -97,10 +146,9 @@ export default function BookPage() {
       }
 
       if (!staffId) {
-        const res = await fetch(`/api/services?businessId=${selectedBusiness}`)
-        if (res.ok) {
-          await res.json()
-        }
+        setError("No staff available for this business. Please try another business.")
+        setLoading(false)
+        return
       }
 
       const res = await fetch("/api/bookings", {
@@ -109,16 +157,20 @@ export default function BookPage() {
         body: JSON.stringify({
           businessId: selectedBusiness,
           serviceId: selectedService,
-          staffId: staffId || "",
+          staffId,
           scheduledAt: scheduledAt.toISOString(),
         }),
       })
 
+      const data = await res.json()
+
       if (res.ok) {
         setSuccess(true)
+      } else {
+        setError(data.error || "Booking failed. Please try again.")
       }
-    } catch (error) {
-      console.error("Booking failed:", error)
+    } catch {
+      setError("An error occurred. Please try again.")
     } finally {
       setLoading(false)
     }
@@ -156,6 +208,12 @@ export default function BookPage() {
     <div className="min-h-screen bg-[#0A0F0D] pt-20 pb-10 px-4">
       <div className="max-w-2xl mx-auto">
         <h1 className="text-3xl font-bold text-[#EFE9DA] mb-8">Book an Appointment</h1>
+
+        {error && (
+          <div className="mb-6 p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-sm">
+            {error}
+          </div>
+        )}
 
         <div className="space-y-6">
           <Card>
@@ -215,6 +273,9 @@ export default function BookPage() {
                         <div>
                           <div className="font-semibold text-[#EFE9DA]">{service.name}</div>
                           <div className="text-sm text-[#EFE9DA]/50">{service.duration} min</div>
+                          {service.description && (
+                            <div className="text-xs text-[#EFE9DA]/40 mt-1">{service.description}</div>
+                          )}
                         </div>
                         <div className="text-[#E8B547] font-semibold">${service.price}</div>
                       </div>
@@ -223,6 +284,46 @@ export default function BookPage() {
                   {services.length === 0 && (
                     <p className="text-[#EFE9DA]/40 text-sm">No services available</p>
                   )}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {selectedBusiness && selectedService && staffList.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Select Stylist (Optional)</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-2 gap-3">
+                  {staffList.map((staff) => (
+                    <button
+                      key={staff.id}
+                      onClick={() => setSelectedStaff(staff.id === selectedStaff ? null : staff.id)}
+                      className={`p-3 rounded-lg border text-left transition-all ${
+                        selectedStaff === staff.id
+                          ? "border-[#E8B547] bg-[#E8B547]/10"
+                          : "border-[#263329] bg-[#141C18] hover:border-[#E8B547]/30"
+                      }`}
+                    >
+                      <div className="font-medium text-sm text-[#EFE9DA]">{staff.name || "Stylist"}</div>
+                      {staff.rating > 0 && (
+                        <div className="text-xs text-[#E8B547] mt-1">
+                          {"★".repeat(Math.round(staff.rating))} {staff.rating.toFixed(1)}
+                        </div>
+                      )}
+                    </button>
+                  ))}
+                  <button
+                    onClick={() => setSelectedStaff(null)}
+                    className={`p-3 rounded-lg border text-left transition-all ${
+                      selectedStaff === null
+                        ? "border-[#E8B547] bg-[#E8B547]/10"
+                        : "border-[#263329] bg-[#141C18] hover:border-[#E8B547]/30"
+                    }`}
+                  >
+                    <div className="font-medium text-sm text-[#EFE9DA]">Any available</div>
+                  </button>
                 </div>
               </CardContent>
             </Card>
@@ -253,9 +354,7 @@ export default function BookPage() {
                       className="w-full p-3 rounded-lg bg-[#0A0F0D] border border-[#263329] text-[#EFE9DA]"
                     >
                       <option value="">Select time</option>
-                      {["09:00", "09:30", "10:00", "10:30", "11:00", "11:30", "12:00", "12:30",
-                        "13:00", "13:30", "14:00", "14:30", "15:00", "15:30", "16:00", "16:30",
-                        "17:00", "17:30"].map((time) => (
+                      {getTimeSlots().map((time) => (
                         <option key={time} value={time}>{time}</option>
                       ))}
                     </select>

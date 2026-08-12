@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import Image from "next/image"
 import { Card, CardContent } from "@/components/ui/card"
 
 interface PortfolioImage {
@@ -50,7 +51,7 @@ export default function PortfolioPage() {
           <p className="text-[#EFE9DA]/50">Showcase your best work</p>
         </div>
 
-        <div className="flex flex-wrap gap-2 justify-center mb-8">
+        <div className="flex flex-wrap gap-2 justify-center mb-8" role="tablist" aria-label="Filter by category">
           {categories.map((cat) => (
             <button
               key={cat}
@@ -60,6 +61,9 @@ export default function PortfolioPage() {
                   ? "bg-[#E8B547] text-[#0A0F0D]"
                   : "bg-[#141C18] text-[#EFE9DA]/60 border border-[#263329] hover:border-[#E8B547]/30"
               }`}
+              role="tab"
+              aria-selected={selectedCategory === cat}
+              aria-controls="portfolio-grid"
             >
               {cat.charAt(0).toUpperCase() + cat.slice(1)}
             </button>
@@ -67,25 +71,27 @@ export default function PortfolioPage() {
         </div>
 
         {loading ? (
-          <div className="text-center text-[#EFE9DA]/50">Loading...</div>
+          <div className="text-center text-[#EFE9DA]/50" aria-live="polite">Loading...</div>
         ) : filtered.length === 0 ? (
-          <div className="text-center">
+          <div className="text-center" aria-live="polite">
             <p className="text-[#EFE9DA]/40 mb-4">No images yet</p>
             <p className="text-sm text-[#EFE9DA]/30">
               Barbers can upload their work from the dashboard
             </p>
           </div>
         ) : (
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+          <div id="portfolio-grid" className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4" role="tabpanel" aria-label="Portfolio images">
             {filtered.map((image) => (
               <Card key={image.id} className="overflow-hidden group">
                 <div className="relative aspect-square">
-                  <img
+                  <Image
                     src={image.imageUrl}
                     alt={image.caption || "Portfolio image"}
-                    className="w-full h-full object-cover"
+                    fill
+                    sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, 25vw"
+                    className="object-cover"
                   />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" aria-hidden="true">
                     <div className="absolute bottom-0 left-0 right-0 p-3">
                       <p className="text-sm font-medium text-white">{image.caption}</p>
                       <p className="text-xs text-white/60">

@@ -4,6 +4,7 @@ import { GeistMono } from 'geist/font/mono'
 import { Providers } from '@/components/providers'
 import { Header } from '@/components/layout/header'
 import { Footer } from '@/components/layout/footer'
+import { ToastProvider } from '@/components/ui/toast'
 import './globals.css'
 
 export const metadata: Metadata = {
@@ -36,9 +37,11 @@ export default function RootLayout({
     <html lang="en" className={GeistSans.variable}>
       <body className={`${GeistSans.className} ${GeistMono.className} min-h-screen bg-[#0A0F0D] text-[#EFE9DA] antialiased`}>
         <Providers>
-          <Header />
-          <main className="flex-1">{children}</main>
-          <Footer />
+          <ToastProvider>
+            <Header />
+            <main className="flex-1">{children}</main>
+            <Footer />
+          </ToastProvider>
         </Providers>
       </body>
     </html>

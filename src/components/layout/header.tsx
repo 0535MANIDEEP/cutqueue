@@ -49,7 +49,7 @@ export function Header() {
     <header className="fixed top-0 left-0 right-0 z-50 bg-[#0F1B17]/90 backdrop-blur-md border-b border-[#2A3F3A]/50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
-          <Link href="/" className="flex items-center gap-2">
+          <Link href="/" className="flex items-center gap-2" aria-label="QueueForge Home">
             <div className="w-8 h-8 rounded-lg bg-[#E8B547] flex items-center justify-center">
               <svg className="w-5 h-5 text-[#0F1B17]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
@@ -60,7 +60,7 @@ export function Header() {
             </span>
           </Link>
 
-          <nav className="hidden md:flex items-center gap-6">
+          <nav className="hidden md:flex items-center gap-6" aria-label="Main navigation">
             {publicLinks.map((link) => (
               <Link
                 key={link.href}
@@ -89,13 +89,13 @@ export function Header() {
                 <Link href={getDashboardHref()}>
                   <Button variant="ghost" size="sm">{getDashboardLabel()}</Button>
                 </Link>
-                <Link href="/notifications" className="relative">
+                <Link href="/notifications" className="relative" aria-label={`Notifications ${unreadCount > 0 ? `(${unreadCount} unread)` : ''}`}>
                   <Button variant="ghost" size="sm">
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0" />
                     </svg>
                     {unreadCount > 0 && (
-                      <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-[#E8B547] text-[#0F1B17] text-xs flex items-center justify-center font-bold">
+                      <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-[#E8B547] text-[#0F1B17] text-xs flex items-center justify-center font-bold" aria-hidden="true">
                         {unreadCount > 9 ? '9+' : unreadCount}
                       </span>
                     )}
@@ -120,6 +120,9 @@ export function Header() {
           <button
             className="md:hidden p-2 text-[#EFE9DA]"
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
+            aria-expanded={mobileMenuOpen}
+            aria-controls="mobile-menu"
           >
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               {mobileMenuOpen ? (
@@ -132,7 +135,7 @@ export function Header() {
         </div>
 
         {mobileMenuOpen && (
-          <div className="md:hidden py-4 border-t border-[#2A3F3A]/50">
+          <div id="mobile-menu" className="md:hidden py-4 border-t border-[#2A3F3A]/50" role="menu" aria-label="Mobile navigation">
             <nav className="flex flex-col gap-2">
               {publicLinks.map((link) => (
                 <Link
@@ -140,19 +143,20 @@ export function Header() {
                   href={link.href}
                   className="px-3 py-2 text-[#EFE9DA]/70 hover:text-[#EFE9DA] hover:bg-[#1E2E29] rounded-lg transition-colors"
                   onClick={() => setMobileMenuOpen(false)}
+                  role="menuitem"
                 >
                   {link.label}
                 </Link>
               ))}
               {session && (
                 <>
-                  <Link href="/reviews" className="px-3 py-2 text-[#EFE9DA]/70 hover:text-[#EFE9DA] hover:bg-[#1E2E29] rounded-lg transition-colors" onClick={() => setMobileMenuOpen(false)}>
+                  <Link href="/reviews" className="px-3 py-2 text-[#EFE9DA]/70 hover:text-[#EFE9DA] hover:bg-[#1E2E29] rounded-lg transition-colors" onClick={() => setMobileMenuOpen(false)} role="menuitem">
                     Reviews
                   </Link>
-                  <Link href="/complaints" className="px-3 py-2 text-[#EFE9DA]/70 hover:text-[#EFE9DA] hover:bg-[#1E2E29] rounded-lg transition-colors" onClick={() => setMobileMenuOpen(false)}>
+                  <Link href="/complaints" className="px-3 py-2 text-[#EFE9DA]/70 hover:text-[#EFE9DA] hover:bg-[#1E2E29] rounded-lg transition-colors" onClick={() => setMobileMenuOpen(false)} role="menuitem">
                     Complaints
                   </Link>
-                  <Link href="/notifications" className="px-3 py-2 text-[#EFE9DA]/70 hover:text-[#EFE9DA] hover:bg-[#1E2E29] rounded-lg transition-colors" onClick={() => setMobileMenuOpen(false)}>
+                  <Link href="/notifications" className="px-3 py-2 text-[#EFE9DA]/70 hover:text-[#EFE9DA] hover:bg-[#1E2E29] rounded-lg transition-colors" onClick={() => setMobileMenuOpen(false)} role="menuitem">
                     Notifications {unreadCount > 0 && `(${unreadCount})`}
                   </Link>
                 </>

@@ -3,6 +3,8 @@ import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { serviceSchema } from "@/lib/validation"
 import { logger } from "@/lib/logger"
+import { enforceServiceLimits } from "@/lib/trial-enforcement"
+import { requirePermission, Role } from "@/lib/roles"
 
 export async function GET(req: Request) {
   try {
@@ -20,6 +22,11 @@ export async function GET(req: Request) {
     const session = await auth()
     if (!session?.user?.id) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    }
+
+    const permCheck = await requirePermission(session as { user: { role: Role; id: string } }, "service:read")
+    if (!permCheck.allowed) {
+      return NextResponse.json({ error: permCheck.error }, { status: permCheck.error === "Unauthorized" ? 401 : 403 })
     }
 
     const business = await prisma.business.findFirst({
@@ -49,8 +56,9 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    if (session.user.role !== "BUSINESS_OWNER" && session.user.role !== "ADMIN") {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 })
+    const permCheck = await requirePermission(session as { user: { role: Role; id: string } }, "service:create")
+    if (!permCheck.allowed) {
+      return NextResponse.json({ error: permCheck.error }, { status: permCheck.error === "Unauthorized" ? 401 : 403 })
     }
 
     const business = await prisma.business.findUnique({
@@ -59,6 +67,11 @@ export async function POST(req: Request) {
 
     if (!business) {
       return NextResponse.json({ error: "Business not found" }, { status: 404 })
+    }
+
+    const trialCheck = await enforceServiceLimits(business.id)
+    if (!trialCheck.allowed) {
+      return NextResponse.json({ error: trialCheck.error }, { status: 403 })
     }
 
     const body = await req.json()

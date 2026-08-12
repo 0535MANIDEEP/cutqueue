@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { logger } from "@/lib/logger"
+import { requirePermission, Role } from "@/lib/roles"
 
 export async function PATCH(
   req: Request,
@@ -13,8 +14,9 @@ export async function PATCH(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    if (session.user.role !== "BUSINESS_OWNER" && session.user.role !== "ADMIN") {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 })
+    const permCheck = await requirePermission(session as { user: { role: Role; id: string } }, "service:update")
+    if (!permCheck.allowed) {
+      return NextResponse.json({ error: permCheck.error }, { status: permCheck.error === "Unauthorized" ? 401 : 403 })
     }
 
     const { id } = await params
@@ -81,8 +83,9 @@ export async function DELETE(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    if (session.user.role !== "BUSINESS_OWNER" && session.user.role !== "ADMIN") {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 })
+    const permCheck = await requirePermission(session as { user: { role: Role; id: string } }, "service:delete")
+    if (!permCheck.allowed) {
+      return NextResponse.json({ error: permCheck.error }, { status: permCheck.error === "Unauthorized" ? 401 : 403 })
     }
 
     const { id } = await params

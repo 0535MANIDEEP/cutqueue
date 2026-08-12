@@ -273,6 +273,7 @@ model QueueEntry {
   @@unique([queueId, ticketNumber])
   @@index([queueId, status])
   @@index([customerId])
+  @@index([joinedAt])
 }
 
 // ──────────────────────────────────────────────

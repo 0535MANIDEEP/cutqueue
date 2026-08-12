@@ -2,6 +2,9 @@ import { NextResponse } from "next/server"
 import bcrypt from "bcryptjs"
 import { prisma } from "@/lib/prisma"
 import { templates } from "@/lib/templates"
+import { generateVerificationToken } from "@/lib/auth-tokens"
+import { sendPlatformEmail } from "@/lib/notify"
+import { logger } from "@/lib/logger"
 
 export async function POST(req: Request) {
   try {
@@ -98,12 +101,23 @@ export async function POST(req: Request) {
       }
     }
 
+    // Send verification email
+    const token = await generateVerificationToken(email)
+    const verifyUrl = `${process.env.NEXTAUTH_URL}/auth/verify?token=${token}`
+    await sendPlatformEmail(
+      email,
+      "Verify your QueueForge account",
+      `<h2>Verify your email</h2><p>Click the link below to verify your email address:</p><p><a href="${verifyUrl}">${verifyUrl}</a></p><p>This link expires in 24 hours.</p>`
+    )
+
+    logger.info("Verification email sent on signup", { email, userId: user.id })
+
     return NextResponse.json(
-      { message: "Account created successfully", userId: user.id },
+      { message: "Account created successfully. Please verify your email.", userId: user.id },
       { status: 201 }
     )
   } catch (error) {
-    console.error("Signup error:", error)
+    logger.error("Signup error", {}, error as Error)
     return NextResponse.json(
       { error: "Failed to create account" },
       { status: 500 }

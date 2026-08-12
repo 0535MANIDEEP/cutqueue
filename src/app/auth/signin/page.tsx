@@ -90,6 +90,11 @@ export default function SignInPage() {
                   onChange={(e) => setPassword(e.target.value)}
                   required
                 />
+                <div className="mt-1 text-right">
+                  <Link href="/auth/forgot-password" className="text-xs text-[#E8B547] hover:text-[#E8B547]/80">
+                    Forgot password?
+                  </Link>
+                </div>
               </div>
 
               <Button

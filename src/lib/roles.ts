@@ -186,3 +186,33 @@ export function isBusinessOwner(role: Role | null): boolean {
 export function isStaff(role: Role | null): boolean {
   return role === "STAFF" || role === "BUSINESS_OWNER" || role === "ADMIN"
 }
+
+export async function requirePermission(
+  session: { user: { role: Role; id: string } } | null,
+  permission: Permission
+): Promise<{ allowed: boolean; error?: string }> {
+  if (!session?.user) {
+    return { allowed: false, error: "Unauthorized" }
+  }
+
+  if (!hasPermission(session.user.role, permission)) {
+    return { allowed: false, error: "Forbidden" }
+  }
+
+  return { allowed: true }
+}
+
+export async function requireRole(
+  session: { user: { role: Role; id: string } } | null,
+  ...roles: Role[]
+): Promise<{ allowed: boolean; error?: string }> {
+  if (!session?.user) {
+    return { allowed: false, error: "Unauthorized" }
+  }
+
+  if (!roles.includes(session.user.role)) {
+    return { allowed: false, error: "Forbidden" }
+  }
+
+  return { allowed: true }
+}

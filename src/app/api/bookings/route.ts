@@ -4,6 +4,8 @@ import { prisma } from "@/lib/prisma"
 import { notifyBookingCreated, notifyBookingCancelled, notifyBookingCompleted, triggerN8NWebhook } from "@/lib/notify"
 import { bookingSchema } from "@/lib/validation"
 import { logger } from "@/lib/logger"
+import { enforceBookingLimits } from "@/lib/trial-enforcement"
+import { requirePermission, Role } from "@/lib/roles"
 
 export async function GET(req: Request) {
   try {
@@ -92,6 +94,11 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
+    const permCheck = await requirePermission(session as { user: { role: Role; id: string } }, "booking:create")
+    if (!permCheck.allowed) {
+      return NextResponse.json({ error: permCheck.error }, { status: permCheck.error === "Unauthorized" ? 401 : 403 })
+    }
+
     const body = await req.json()
     const parsed = bookingSchema.safeParse(body)
 
@@ -103,6 +110,11 @@ export async function POST(req: Request) {
     }
 
     const { staffId, serviceId, businessId, scheduledAt, notes } = parsed.data
+
+    const trialCheck = await enforceBookingLimits(businessId)
+    if (!trialCheck.allowed) {
+      return NextResponse.json({ error: trialCheck.error }, { status: 403 })
+    }
 
     const service = await prisma.service.findUnique({
       where: { id: serviceId },

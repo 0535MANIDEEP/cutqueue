@@ -1,6 +1,10 @@
 import { prisma } from "./prisma"
 import { Prisma } from "../generated/prisma/client"
 import { getBusinessCredentials, hasTwilioCredentials, hasResendCredentials } from "./business-credentials"
+import { twilioBreaker, resendBreaker } from "./circuit-breaker"
+import { logger } from "./logger"
+
+const PLATFORM_RESEND_API_KEY = process.env.RESEND_API_KEY
 
 interface NotifyParams {
   userId: string
@@ -22,69 +26,75 @@ export async function createNotification(params: NotifyParams): Promise<void> {
       },
     })
   } catch (error) {
-    console.error("Failed to create notification:", error)
+    logger.error("Failed to create notification", { userId: params.userId }, error as Error)
   }
+}
+
+async function sendSMSRaw(to: string, message: string, creds: { accountSid: string; authToken: string; phoneNumber: string }): Promise<boolean> {
+  const { accountSid, authToken, phoneNumber } = creds
+  const url = `https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Messages.json`
+
+  const body = new URLSearchParams()
+  body.append("To", to)
+  body.append("From", phoneNumber)
+  body.append("Body", message)
+
+  const response = await fetch(url, {
+    method: "POST",
+    headers: {
+      Authorization: `Basic ${Buffer.from(`${accountSid}:${authToken}`).toString("base64")}`,
+      "Content-Type": "application/x-www-form-urlencoded",
+    },
+    body: body.toString(),
+  })
+
+  return response.ok
 }
 
 export async function sendSMS(to: string, message: string, businessId: string): Promise<boolean> {
   const creds = await getBusinessCredentials(businessId)
 
   if (!hasTwilioCredentials(creds) || !creds.twilio) {
-    console.log("Twilio not configured for business, skipping SMS")
     return false
   }
 
   try {
-    const { accountSid, authToken, phoneNumber } = creds.twilio
-    const url = `https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Messages.json`
-
-    const body = new URLSearchParams()
-    body.append("To", to)
-    body.append("From", phoneNumber)
-    body.append("Body", message)
-
-    const response = await fetch(url, {
-      method: "POST",
-      headers: {
-        Authorization: `Basic ${Buffer.from(`${accountSid}:${authToken}`).toString("base64")}`,
-        "Content-Type": "application/x-www-form-urlencoded",
-      },
-      body: body.toString(),
-    })
-
-    return response.ok
+    return await twilioBreaker.call(() => sendSMSRaw(to, message, creds.twilio!))
   } catch (error) {
-    console.error("Failed to send SMS:", error)
+    logger.error("Failed to send SMS (circuit breaker open)", { businessId, to }, error as Error)
     return false
   }
+}
+
+async function sendEmailRaw(to: string, subject: string, html: string, apiKey: string): Promise<boolean> {
+  const response = await fetch("https://api.resend.com/emails", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      from: "QueueForge <notifications@queueforge.app>",
+      to: [to],
+      subject,
+      html,
+    }),
+  })
+
+  return response.ok
 }
 
 export async function sendEmail(to: string, subject: string, html: string, businessId: string): Promise<boolean> {
   const creds = await getBusinessCredentials(businessId)
 
   if (!hasResendCredentials(creds) || !creds.resend) {
-    console.log("Resend not configured for business, skipping email")
     return false
   }
 
   try {
-    const response = await fetch("https://api.resend.com/emails", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${creds.resend.apiKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        from: "QueueForge <notifications@queueforge.app>",
-        to: [to],
-        subject,
-        html,
-      }),
-    })
-
-    return response.ok
+    return await resendBreaker.call(() => sendEmailRaw(to, subject, html, creds.resend!.apiKey))
   } catch (error) {
-    console.error("Failed to send email:", error)
+    logger.error("Failed to send email (circuit breaker open)", { businessId, to }, error as Error)
     return false
   }
 }
@@ -338,6 +348,40 @@ export async function notifyAnnouncement(businessId: string, title: string, cont
       })
     )
   )
+}
+
+export async function sendPlatformEmail(to: string, subject: string, html: string): Promise<boolean> {
+  if (!PLATFORM_RESEND_API_KEY) {
+    logger.warn("Platform Resend API key not configured, skipping email", { to })
+    return false
+  }
+
+  try {
+    const response = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${PLATFORM_RESEND_API_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        from: "QueueForge <notifications@queueforge.app>",
+        to: [to],
+        subject,
+        html,
+      }),
+    })
+
+    if (!response.ok) {
+      const error = await response.text()
+      logger.error("Platform email send failed", { to, error })
+      return false
+    }
+
+    return true
+  } catch (error) {
+    logger.error("Platform email send error", { to }, error as Error)
+    return false
+  }
 }
 
 export async function triggerN8NWebhook(event: string, data: Record<string, string>): Promise<void> {

@@ -53,11 +53,15 @@ export async function PATCH(
         const waitingCount = await prisma.queueEntry.count({
           where: { queueId: entry.queueId, status: "WAITING" },
         })
+        const queueData = await prisma.queue.findUnique({
+          where: { id: entry.queueId },
+          select: { avgServiceTime: true },
+        })
         await prisma.queue.update({
           where: { id: entry.queueId },
           data: {
             currentNumber: entry.ticketNumber,
-            estimatedWait: waitingCount * 20,
+            estimatedWait: waitingCount * (queueData?.avgServiceTime || 20),
           },
         })
         await triggerN8NWebhook("queue.completed", {

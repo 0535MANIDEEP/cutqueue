@@ -4,6 +4,8 @@ import { prisma } from "@/lib/prisma"
 import { notifyQueueJoined, notifyQueueCalled, triggerN8NWebhook } from "@/lib/notify"
 import { queueJoinSchema } from "@/lib/validation"
 import { logger } from "@/lib/logger"
+import { enforceQueueLimits } from "@/lib/trial-enforcement"
+import { requirePermission, Role } from "@/lib/roles"
 
 export async function GET(req: Request) {
   try {
@@ -41,7 +43,7 @@ export async function GET(req: Request) {
     }
 
     const waitingCount = queue.entries.filter((e) => e.status === "WAITING").length
-    const estimatedWait = waitingCount * 20
+    const estimatedWait = waitingCount * queue.avgServiceTime
 
     return NextResponse.json({
       queue: { id: queue.id, isActive: queue.isActive },
@@ -60,6 +62,11 @@ export async function POST(req: Request) {
     const session = await auth()
     if (!session?.user?.id) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    }
+
+    const permCheck = await requirePermission(session as { user: { role: Role; id: string } }, "queue:create")
+    if (!permCheck.allowed) {
+      return NextResponse.json({ error: permCheck.error }, { status: permCheck.error === "Unauthorized" ? 401 : 403 })
     }
 
     const body = await req.json()
@@ -91,13 +98,26 @@ export async function POST(req: Request) {
         data: {
           businessId,
           isActive: true,
-          maxCapacity: 50,
         },
       })
     }
 
     if (!queue.isActive) {
       return NextResponse.json({ error: "Queue is closed" }, { status: 400 })
+    }
+
+    if (queue.maxCapacity) {
+      const currentCount = await prisma.queueEntry.count({
+        where: { queueId: queue.id, status: { in: ["WAITING", "CALLED", "IN_PROGRESS"] } },
+      })
+      if (currentCount >= queue.maxCapacity) {
+        return NextResponse.json({ error: "Queue is full" }, { status: 400 })
+      }
+    }
+
+    const trialCheck = await enforceQueueLimits(businessId)
+    if (!trialCheck.allowed) {
+      return NextResponse.json({ error: trialCheck.error }, { status: 403 })
     }
 
     const existingEntry = await prisma.queueEntry.findFirst({
@@ -155,7 +175,7 @@ export async function POST(req: Request) {
       userId: session.user.id,
       ticketNumber: entry.ticketNumber,
       position: waitingCount,
-      estimatedWait: waitingCount * 20,
+      estimatedWait: waitingCount * queue.avgServiceTime,
     })
 
     await triggerN8NWebhook("queue.joined", {
