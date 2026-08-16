@@ -78,6 +78,7 @@ const roleConfigs: Record<Role, RoleConfig> = {
       { label: "Book", href: "/book" },
       { label: "Portfolio", href: "/portfolio" },
       { label: "Queue", href: "/queue" },
+      { label: "Schedule", href: "/dashboard/owner/schedule" },
       { label: "Analytics", href: "/dashboard/owner/analytics" },
       { label: "Pricing", href: "/dashboard/owner/pricing" },
     ],
