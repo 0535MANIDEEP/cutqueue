@@ -213,6 +213,25 @@ export async function notifyBookingCompleted(booking: {
     data: { bookingId: booking.id },
   })
 
+  try {
+    await prisma.customerPoints.upsert({
+      where: { customerId: booking.customerId },
+      create: {
+        customerId: booking.customerId,
+        points: 10,
+        totalVisits: 1,
+        tier: "BRONZE",
+      },
+      update: {
+        points: { increment: 10 },
+        totalVisits: { increment: 1 },
+        lastVisitAt: new Date(),
+      },
+    })
+  } catch {
+    // Points are non-critical
+  }
+
   const customer = await prisma.user.findUnique({
     where: { id: booking.customerId },
     select: { phone: true, email: true },

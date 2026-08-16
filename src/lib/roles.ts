@@ -34,6 +34,7 @@ const roleConfigs: Record<Role, RoleConfig> = {
       { label: "Book", href: "/book" },
       { label: "Portfolio", href: "/portfolio" },
       { label: "Queue", href: "/queue" },
+      { label: "Rewards", href: "/rewards" },
     ],
     permissions: [
       "booking:create",
@@ -77,6 +78,8 @@ const roleConfigs: Record<Role, RoleConfig> = {
       { label: "Book", href: "/book" },
       { label: "Portfolio", href: "/portfolio" },
       { label: "Queue", href: "/queue" },
+      { label: "Analytics", href: "/dashboard/owner/analytics" },
+      { label: "Pricing", href: "/dashboard/owner/pricing" },
     ],
     permissions: [
       "booking:create",
