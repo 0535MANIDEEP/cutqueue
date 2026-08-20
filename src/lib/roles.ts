@@ -12,13 +12,9 @@ export type Resource =
   | "booking"
   | "queue"
   | "service"
-  | "portfolio"
   | "business"
   | "staff"
   | "user"
-  | "template"
-  | "analytics"
-  | "settings"
   | "admin"
 
 export type Action = "create" | "read" | "update" | "delete" | "manage"
@@ -28,13 +24,12 @@ export type Permission = `${Resource}:${Action}`
 const roleConfigs: Record<Role, RoleConfig> = {
   CUSTOMER: {
     label: "Customer",
-    description: "Book services, join queues, earn rewards",
+    description: "Book services and join queues",
     dashboardPath: "/dashboard/customer",
     navItems: [
+      { label: "My Bookings", href: "/dashboard/customer" },
       { label: "Book", href: "/book" },
-      { label: "Portfolio", href: "/portfolio" },
-      { label: "Queue", href: "/queue" },
-      { label: "Rewards", href: "/rewards" },
+      { label: "Join Queue", href: "/queue/join" },
     ],
     permissions: [
       "booking:create",
@@ -43,18 +38,16 @@ const roleConfigs: Record<Role, RoleConfig> = {
       "queue:create",
       "queue:read",
       "service:read",
-      "portfolio:read",
       "business:read",
     ],
   },
   STAFF: {
     label: "Staff",
-    description: "Manage your bookings, portfolio, and schedule",
+    description: "Manage queue and bookings",
     dashboardPath: "/dashboard/staff",
     navItems: [
-      { label: "Book", href: "/book" },
-      { label: "Portfolio", href: "/portfolio" },
       { label: "Queue", href: "/queue" },
+      { label: "Book", href: "/book" },
     ],
     permissions: [
       "booking:create",
@@ -63,24 +56,17 @@ const roleConfigs: Record<Role, RoleConfig> = {
       "queue:create",
       "queue:read",
       "service:read",
-      "portfolio:create",
-      "portfolio:read",
-      "portfolio:update",
       "business:read",
-      "analytics:read",
     ],
   },
   BUSINESS_OWNER: {
     label: "Business Owner",
-    description: "Manage your business, queue, services, and staff",
+    description: "Manage your business",
     dashboardPath: "/dashboard/owner",
     navItems: [
-      { label: "Book", href: "/book" },
-      { label: "Portfolio", href: "/portfolio" },
-      { label: "Queue", href: "/queue" },
-      { label: "Schedule", href: "/dashboard/owner/schedule" },
-      { label: "Analytics", href: "/dashboard/owner/analytics" },
-      { label: "Pricing", href: "/dashboard/owner/pricing" },
+      { label: "Dashboard", href: "/dashboard/owner" },
+      { label: "Services", href: "/dashboard/owner/services" },
+      { label: "Settings", href: "/dashboard/owner/settings" },
     ],
     permissions: [
       "booking:create",
@@ -93,16 +79,10 @@ const roleConfigs: Record<Role, RoleConfig> = {
       "service:read",
       "service:update",
       "service:delete",
-      "portfolio:create",
-      "portfolio:read",
-      "portfolio:update",
-      "portfolio:delete",
       "business:read",
       "business:update",
       "staff:read",
       "staff:update",
-      "analytics:read",
-      "settings:update",
     ],
   },
   ADMIN: {
@@ -110,9 +90,9 @@ const roleConfigs: Record<Role, RoleConfig> = {
     description: "Full platform control",
     dashboardPath: "/admin",
     navItems: [
-      { label: "Book", href: "/book" },
-      { label: "Portfolio", href: "/portfolio" },
-      { label: "Queue", href: "/queue" },
+      { label: "Dashboard", href: "/admin" },
+      { label: "Businesses", href: "/admin/businesses" },
+      { label: "Users", href: "/admin/users" },
     ],
     permissions: [
       "booking:create",
@@ -126,10 +106,6 @@ const roleConfigs: Record<Role, RoleConfig> = {
       "service:read",
       "service:update",
       "service:delete",
-      "portfolio:create",
-      "portfolio:read",
-      "portfolio:update",
-      "portfolio:delete",
       "business:create",
       "business:read",
       "business:update",
@@ -144,13 +120,6 @@ const roleConfigs: Record<Role, RoleConfig> = {
       "user:update",
       "user:delete",
       "user:manage",
-      "template:create",
-      "template:read",
-      "template:update",
-      "template:delete",
-      "analytics:read",
-      "settings:read",
-      "settings:update",
       "admin:read",
       "admin:manage",
     ],
