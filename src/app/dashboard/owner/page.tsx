@@ -36,6 +36,13 @@ export default function OwnerDashboard() {
     })
   }, [])
 
+  // Auto-refresh every 5 seconds for real-time queue updates
+  useEffect(() => {
+    if (!businessId) return
+    const interval = setInterval(() => fetchData(businessId), 5000)
+    return () => clearInterval(interval)
+  }, [businessId])
+
   const fetchData = (bid: string) => {
     fetch(`/api/queue?businessId=${bid}`).then(r => r.json()).then(d => setQueue(d.entries || []))
     fetch(`/api/bookings?businessId=${bid}`).then(r => r.json()).then(d => setBookings(d.bookings || []))
