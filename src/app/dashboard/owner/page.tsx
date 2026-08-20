@@ -27,13 +27,15 @@ export default function OwnerDashboard() {
   const [tab, setTab] = useState<"queue" | "bookings">("queue")
 
   useEffect(() => {
-    fetch("/api/auth/session").then(r => r.json()).then(session => {
-      const bid = session?.user?.businessId
-      if (bid) {
-        setBusinessId(bid)
-        fetchData(bid)
-      }
-    })
+    fetch("/api/business/settings")
+      .then((r) => r.json())
+      .then((data) => {
+        if (data?.id) {
+          setBusinessId(data.id)
+          fetchData(data.id)
+        }
+      })
+      .catch(() => {})
   }, [])
 
   // Auto-refresh every 5 seconds for real-time queue updates

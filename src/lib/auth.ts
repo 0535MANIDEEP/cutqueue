@@ -62,6 +62,16 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           select: { role: true },
         })
         token.role = dbUser?.role || "CUSTOMER"
+
+        if (dbUser?.role === "BUSINESS_OWNER") {
+          const business = await prisma.business.findFirst({
+            where: { ownerId: user.id },
+            select: { id: true },
+          })
+          if (business) {
+            token.businessId = business.id
+          }
+        }
       }
       return token
     },
@@ -69,6 +79,10 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       if (session.user) {
         session.user.id = token.id as string
         session.user.role = token.role as string
+        if (token.businessId) {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          ;(session.user as any).businessId = token.businessId as string
+        }
       }
       return session
     },
