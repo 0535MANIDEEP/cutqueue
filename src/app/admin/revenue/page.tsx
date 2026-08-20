@@ -101,17 +101,17 @@ export default function AdminRevenuePage() {
               <ul className="text-sm text-[#EFE9DA]/60 space-y-1">
                 <li>• 25% conversion to paid plans</li>
                 <li>• SMS/email notifications enabled</li>
-                <li>• Starter tier at $15/month</li>
-                <li>• Goal: $2,250-9,000 MRR</li>
+                <li>• Starter tier at ₹499/month</li>
+                <li>• Goal: ₹1,00,000-3,00,000 MRR</li>
               </ul>
             </div>
             <div className="p-4 rounded-lg bg-[#1E2E29] border border-[#2A3F3A]">
               <h3 className="font-semibold text-[#E8B547] mb-2">Phase 3: Scale (Months 7-12)</h3>
               <ul className="text-sm text-[#EFE9DA]/60 space-y-1">
                 <li>• 40% conversion rate</li>
-                <li>• Pro tier at $30/month</li>
-                <li>• Enterprise deals at $75/month</li>
-                <li>• Goal: $36K MRR</li>
+                <li>• Pro tier at ₹999/month</li>
+                <li>• Business tier at ₹1,999/month</li>
+                <li>• Goal: ₹10,00,000 MRR</li>
               </ul>
             </div>
           </div>

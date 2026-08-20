@@ -3,10 +3,10 @@
 import { motion, useReducedMotion } from 'motion/react'
 
 const queue = [
-  { name: 'Marcus J.', service: 'Fade + Lineup', position: 1, status: 'next' },
-  { name: 'DeShawn R.', service: 'Beard Trim', position: 2, status: 'waiting' },
-  { name: 'Tyler M.', service: 'Classic Cut', position: 3, status: 'waiting' },
-  { name: 'Andre K.', service: 'Fresh Fade', position: 4, status: 'waiting' },
+  { name: 'Rahul S.', service: 'Haircut', position: 1, status: 'next' },
+  { name: 'Priya K.', service: 'Beard Trim', position: 2, status: 'waiting' },
+  { name: 'Amit M.', service: 'Classic Cut', position: 3, status: 'waiting' },
+  { name: 'Neha P.', service: 'Hair Color', position: 4, status: 'waiting' },
 ]
 
 const statusColors = {
@@ -22,7 +22,7 @@ export function QueueDemo() {
       {/* Header */}
       <div className="px-5 py-4 border-b border-[#263329] flex items-center justify-between">
         <div>
-          <p className="text-sm font-semibold text-[#EFE9DA]">Sharp Edgez Barbershop</p>
+          <p className="text-sm font-semibold text-[#EFE9DA]">Your Shop Name</p>
           <p className="text-xs text-[#EFE9DA]/40 font-mono mt-0.5">4 in queue · ~25 min wait</p>
         </div>
         <div className="flex items-center gap-1.5">

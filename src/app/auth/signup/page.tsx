@@ -121,7 +121,7 @@ export default function SignUpPage() {
                     </label>
                     <Input
                       type="text"
-                      placeholder="Sharp Edgez Barbershop"
+                      placeholder="Your Shop Name"
                       value={formData.businessName}
                       onChange={(e) => setFormData({ ...formData, businessName: e.target.value })}
                       required={isOwner}

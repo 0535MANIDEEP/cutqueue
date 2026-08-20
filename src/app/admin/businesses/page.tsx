@@ -203,9 +203,9 @@ export default function AdminBusinessesPage() {
                   className="w-full p-2 rounded-lg bg-[#0A0F0D] border border-[#263329] text-[#EFE9DA]"
                 >
                   <option value="FREE">Free</option>
-                  <option value="PRO">Pro ($25/mo)</option>
-                  <option value="BUSINESS">Business ($100/mo)</option>
-                  <option value="ENTERPRISE">Enterprise (Custom)</option>
+                  <option value="STARTER">Starter (₹499/mo)</option>
+                  <option value="PRO">Professional (₹999/mo)</option>
+                  <option value="BUSINESS">Business (₹1,999/mo)</option>
                 </select>
               </div>
               <div className="flex items-center gap-3">

@@ -94,7 +94,7 @@ export default function OnboardingPage() {
         <div className="space-y-4">
           <Input
             type="text"
-            placeholder="Sharp Edgez Barbershop"
+            placeholder="Your Shop Name"
             value={businessName}
             onChange={(e) => setBusinessName(e.target.value)}
           />
