@@ -20,6 +20,7 @@ export async function GET(req: Request) {
       where: { businessId },
       include: {
         entries: {
+          where: { status: { in: ["WAITING", "CALLED", "IN_PROGRESS"] } },
           select: {
             id: true,
             ticketNumber: true,
@@ -50,6 +51,8 @@ export async function GET(req: Request) {
       entries: queue.entries,
       waitingCount,
       estimatedWait,
+    }, {
+      headers: { "Cache-Control": "private, max-age=5, stale-while-revalidate=10" },
     })
   } catch (error) {
     logger.error("Queue GET error", {}, error as Error)

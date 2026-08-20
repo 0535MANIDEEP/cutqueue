@@ -16,7 +16,9 @@ export async function GET(req: Request) {
         where: { businessId, isActive: true },
         orderBy: { price: "asc" },
       })
-      return NextResponse.json(services)
+      return NextResponse.json(services, {
+        headers: { "Cache-Control": "private, max-age=30, stale-while-revalidate=60" },
+      })
     }
 
     const session = await auth()

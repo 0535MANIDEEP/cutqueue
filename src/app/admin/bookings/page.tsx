@@ -131,7 +131,7 @@ export default function AdminBookingsPage() {
                     </td>
                     <td className="px-4 py-3">
                       <div className="text-sm text-[#EFE9DA]">{booking.service.name}</div>
-                      <div className="text-xs text-[#E8B547]">${booking.service.price}</div>
+                      <div className="text-xs text-[#E8B547]">₹{booking.service.price}</div>
                     </td>
                     <td className="px-4 py-3 text-sm text-[#EFE9DA]/70">{booking.business.name}</td>
                     <td className="px-4 py-3 text-sm text-[#EFE9DA]/70">{booking.staff.user.name || "Any"}</td>

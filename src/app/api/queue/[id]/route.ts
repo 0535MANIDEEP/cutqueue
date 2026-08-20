@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { notifyQueueCalled, triggerN8NWebhook } from "@/lib/notify"
+import { logger } from "@/lib/logger"
 
 export async function PATCH(
   req: Request,
@@ -34,16 +35,20 @@ export async function PATCH(
     switch (action) {
       case "call":
         updateData = { status: "CALLED", calledAt: new Date() }
-        await notifyQueueCalled({
-          id: entry.id,
-          userId: entry.customerId,
-          ticketNumber: entry.ticketNumber,
-        })
-        await triggerN8NWebhook("queue.called", {
-          queueId: entry.queueId,
-          ticketNumber: String(entry.ticketNumber),
-          businessId: entry.queue.businessId,
-        })
+        try {
+          await notifyQueueCalled({
+            id: entry.id,
+            userId: entry.customerId,
+            ticketNumber: entry.ticketNumber,
+          })
+          await triggerN8NWebhook("queue.called", {
+            queueId: entry.queueId,
+            ticketNumber: String(entry.ticketNumber),
+            businessId: entry.queue.businessId,
+          })
+        } catch (notifyError) {
+          logger.error("Failed to send queue notification", { entryId: entry.id }, notifyError as Error)
+        }
         break
       case "start":
         updateData = { status: "IN_PROGRESS", startedAt: new Date() }
@@ -64,11 +69,15 @@ export async function PATCH(
             estimatedWait: waitingCount * (queueData?.avgServiceTime || 20),
           },
         })
-        await triggerN8NWebhook("queue.completed", {
-          queueId: entry.queueId,
-          ticketNumber: String(entry.ticketNumber),
-          businessId: entry.queue.businessId,
-        })
+        try {
+          await triggerN8NWebhook("queue.completed", {
+            queueId: entry.queueId,
+            ticketNumber: String(entry.ticketNumber),
+            businessId: entry.queue.businessId,
+          })
+        } catch (webhookError) {
+          logger.error("Failed to trigger queue completed webhook", { entryId: entry.id }, webhookError as Error)
+        }
         break
       case "cancel":
         updateData = { status: "CANCELLED" }
@@ -84,7 +93,7 @@ export async function PATCH(
 
     return NextResponse.json(updated)
   } catch (error) {
-    console.error("Queue PATCH error:", error)
+    logger.error("Queue PATCH error", {}, error as Error)
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })
   }
 }

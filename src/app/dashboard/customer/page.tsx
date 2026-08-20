@@ -21,8 +21,9 @@ export default function CustomerDashboard() {
       .then(r => r.json())
       .then(d => {
         setBookings(d.bookings || [])
-        setLoading(false)
       })
+      .catch(() => {})
+      .finally(() => setLoading(false))
   }, [])
 
   const upcoming = bookings.filter(b => new Date(b.scheduledAt) > new Date() && b.status !== "CANCELLED")

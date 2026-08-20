@@ -142,7 +142,7 @@ export default function AdminServicesPage() {
                     </td>
                     <td className="px-4 py-3 text-sm text-[#EFE9DA]/70">{service.business.name}</td>
                     <td className="px-4 py-3 text-sm text-[#EFE9DA]/70">{service.duration} min</td>
-                    <td className="px-4 py-3 text-sm text-[#E8B547] font-medium">${service.price}</td>
+                    <td className="px-4 py-3 text-sm text-[#E8B547] font-medium">₹{service.price}</td>
                     <td className="px-4 py-3">
                       <span className={`px-2 py-1 rounded text-xs font-medium ${service.isActive ? "bg-green-500/10 text-green-400" : "bg-red-500/10 text-red-400"}`}>
                         {service.isActive ? "Active" : "Inactive"}
@@ -188,7 +188,7 @@ export default function AdminServicesPage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm text-[#EFE9DA]/60 mb-1">Price ($)</label>
+                  <label className="block text-sm text-[#EFE9DA]/60 mb-1">Price (₹)</label>
                   <Input
                     type="number"
                     step="0.01"

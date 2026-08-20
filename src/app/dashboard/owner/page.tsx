@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { Header } from "@/components/layout/header"
 
 interface QueueEntry {
@@ -25,6 +25,26 @@ export default function OwnerDashboard() {
   const [bookings, setBookings] = useState<Booking[]>([])
   const [businessId, setBusinessId] = useState<string | null>(null)
   const [tab, setTab] = useState<"queue" | "bookings">("queue")
+  const [error, setError] = useState("")
+
+  const fetchData = useCallback(async (bid: string) => {
+    try {
+      const [queueRes, bookingsRes] = await Promise.all([
+        fetch(`/api/queue?businessId=${bid}`),
+        fetch(`/api/bookings?businessId=${bid}`),
+      ])
+      if (queueRes.ok) {
+        const d = await queueRes.json()
+        setQueue(d.entries || [])
+      }
+      if (bookingsRes.ok) {
+        const d = await bookingsRes.json()
+        setBookings(d.bookings || [])
+      }
+    } catch {
+      setError("Failed to load data")
+    }
+  }, [])
 
   useEffect(() => {
     fetch("/api/business/settings")
@@ -35,57 +55,84 @@ export default function OwnerDashboard() {
           fetchData(data.id)
         }
       })
-      .catch(() => {})
-  }, [])
+      .catch(() => setError("Failed to load business settings"))
+  }, [fetchData])
 
-  // Auto-refresh every 5 seconds for real-time queue updates
   useEffect(() => {
     if (!businessId) return
-    const interval = setInterval(() => fetchData(businessId), 5000)
+    const interval = setInterval(() => fetchData(businessId), 10000)
     return () => clearInterval(interval)
-  }, [businessId])
-
-  const fetchData = (bid: string) => {
-    fetch(`/api/queue?businessId=${bid}`).then(r => r.json()).then(d => setQueue(d.entries || []))
-    fetch(`/api/bookings?businessId=${bid}`).then(r => r.json()).then(d => setBookings(d.bookings || []))
-  }
+  }, [businessId, fetchData])
 
   const callNext = async (entryId: string) => {
-    await fetch(`/api/queue/${entryId}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ status: "SERVING" }),
-    })
-    if (businessId) fetchData(businessId)
+    try {
+      const res = await fetch(`/api/queue/${entryId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "call" }),
+      })
+      if (!res.ok) {
+        const err = await res.json()
+        setError(err.error || "Failed to call next customer")
+        return
+      }
+      if (businessId) fetchData(businessId)
+    } catch {
+      setError("Network error. Please try again.")
+    }
   }
 
   const completeService = async (entryId: string) => {
-    await fetch(`/api/queue/${entryId}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ status: "COMPLETED" }),
-    })
-    if (businessId) fetchData(businessId)
+    try {
+      const res = await fetch(`/api/queue/${entryId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "complete" }),
+      })
+      if (!res.ok) {
+        const err = await res.json()
+        setError(err.error || "Failed to complete service")
+        return
+      }
+      if (businessId) fetchData(businessId)
+    } catch {
+      setError("Network error. Please try again.")
+    }
   }
 
   const confirmBooking = async (bookingId: string) => {
-    await fetch("/api/bookings", {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ id: bookingId, status: "CONFIRMED" }),
-    })
-    if (businessId) fetchData(businessId)
+    try {
+      const res = await fetch("/api/bookings", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ bookingId, status: "CONFIRMED" }),
+      })
+      if (!res.ok) {
+        const err = await res.json()
+        setError(err.error || "Failed to confirm booking")
+        return
+      }
+      if (businessId) fetchData(businessId)
+    } catch {
+      setError("Network error. Please try again.")
+    }
   }
 
   const waiting = queue.filter(e => e.status === "WAITING")
-  const serving = queue.filter(e => e.status === "SERVING")
+  const serving = queue.filter(e => e.status === "SERVING" || e.status === "CALLED" || e.status === "IN_PROGRESS")
   const todayBookings = bookings.filter(b => b.scheduledAt.startsWith(new Date().toISOString().split("T")[0]))
 
   return (
     <div className="min-h-screen bg-gray-50">
       <Header />
       <div className="max-w-4xl mx-auto px-4 py-6">
-        {/* Quick Stats */}
+        {error && (
+          <div className="mb-4 p-3 rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm flex items-center justify-between">
+            <span>{error}</span>
+            <button onClick={() => setError("")} className="text-red-500 hover:text-red-700 font-bold">×</button>
+          </div>
+        )}
+
         <div className="grid grid-cols-3 gap-4 mb-6">
           <div className="bg-white rounded-xl p-4 border border-gray-100 text-center">
             <p className="text-3xl font-bold text-blue-600">{waiting.length}</p>
@@ -101,7 +148,6 @@ export default function OwnerDashboard() {
           </div>
         </div>
 
-        {/* Tab Toggle */}
         <div className="flex bg-gray-100 rounded-lg p-1 mb-6">
           <button
             onClick={() => setTab("queue")}
@@ -121,10 +167,8 @@ export default function OwnerDashboard() {
           </button>
         </div>
 
-        {/* Queue Tab */}
         {tab === "queue" && (
           <div className="space-y-3">
-            {/* Currently Serving */}
             {serving.length > 0 && (
               <div>
                 <h3 className="text-sm font-medium text-gray-500 mb-2">Now Serving</h3>
@@ -147,7 +191,6 @@ export default function OwnerDashboard() {
               </div>
             )}
 
-            {/* Waiting */}
             <div>
               <h3 className="text-sm font-medium text-gray-500 mb-2">Waiting ({waiting.length})</h3>
               {waiting.length === 0 ? (
@@ -155,7 +198,7 @@ export default function OwnerDashboard() {
                   <p className="text-gray-500">No one waiting</p>
                 </div>
               ) : (
-                waiting.map((entry, i) => (
+                waiting.map((entry) => (
                   <div key={entry.id} className="bg-white border border-gray-100 rounded-xl p-4 mb-3 flex items-center justify-between">
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-700 font-bold">
@@ -179,7 +222,6 @@ export default function OwnerDashboard() {
           </div>
         )}
 
-        {/* Bookings Tab */}
         {tab === "bookings" && (
           <div className="space-y-3">
             {todayBookings.length === 0 ? (

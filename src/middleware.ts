@@ -33,6 +33,10 @@ const RATE_LIMITS: Record<string, { limit: number; windowMs: number }> = {
   "/api/auth/signup": { limit: 3, windowMs: 60000 },
   "/api/auth/signin": { limit: 5, windowMs: 60000 },
   "/api/auth/callback": { limit: 10, windowMs: 60000 },
+  "/api/auth/forgot-password": { limit: 3, windowMs: 60000 },
+  "/api/auth/reset-password": { limit: 5, windowMs: 60000 },
+  "/api/auth/verify-email": { limit: 5, windowMs: 60000 },
+  "/api/admin/activate": { limit: 10, windowMs: 60000 },
   "/api/bookings": { limit: 30, windowMs: 60000 },
   "/api/queue": { limit: 20, windowMs: 60000 },
   "/api/queue/join": { limit: 10, windowMs: 60000 },
@@ -110,6 +114,22 @@ export function middleware(request: NextRequest) {
       response.headers.set("X-RateLimit-Remaining", String(remaining))
       return addSecurityHeaders(response)
     }
+
+    const defaultKey = getRateLimitKey(request, pathname)
+    const { success: defaultSuccess, remaining: defaultRemaining } = checkSimpleRateLimit(
+      defaultKey,
+      60,
+      60000
+    )
+    if (!defaultSuccess) {
+      return addSecurityHeaders(
+        NextResponse.json({ error: "Too many requests" }, { status: 429 })
+      )
+    }
+    const defaultResponse = NextResponse.next()
+    defaultResponse.headers.set("X-RateLimit-Limit", "60")
+    defaultResponse.headers.set("X-RateLimit-Remaining", String(defaultRemaining))
+    return addSecurityHeaders(defaultResponse)
   }
 
   return addSecurityHeaders(NextResponse.next())

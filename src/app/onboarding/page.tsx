@@ -104,7 +104,7 @@ export default function OnboardingPage() {
               <ul className="space-y-1">
                 {selectedTemplate.defaultServices.map((s) => (
                   <li key={s.name} className="text-sm text-[#EFE9DA]">
-                    {s.name} — ${s.price} ({s.duration} min)
+                    {s.name} — ₹{s.price} ({s.duration} min)
                   </li>
                 ))}
               </ul>
