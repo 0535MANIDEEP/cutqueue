@@ -21,6 +21,14 @@
     {
       "path": "/api/cron/queue-cleanup",
       "schedule": "0 0 * * *"
+    },
+    {
+      "path": "/api/cron/no-shows",
+      "schedule": "30 * * * *"
+    },
+    {
+      "path": "/api/cron/review-requests",
+      "schedule": "0 10 * * *"
     }
   ],
   "headers": [

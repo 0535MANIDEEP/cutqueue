@@ -65,6 +65,7 @@ const roleConfigs: Record<Role, RoleConfig> = {
     dashboardPath: "/dashboard/owner",
     navItems: [
       { label: "Dashboard", href: "/dashboard/owner" },
+      { label: "Analytics", href: "/dashboard/owner/analytics" },
       { label: "Services", href: "/dashboard/owner/services" },
       { label: "Subscription", href: "/dashboard/owner/subscription" },
       { label: "Settings", href: "/dashboard/owner/settings" },
