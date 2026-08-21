@@ -142,6 +142,7 @@ export default function QueuePage() {
               value={selectedBusiness}
               onChange={(e) => setSelectedBusiness(e.target.value)}
               className="w-full md:w-auto px-4 py-2.5 rounded-lg bg-[#1E2E29] border border-[#2A3F3A] text-[#EFE9DA] focus:outline-none focus:border-[#E8B547]"
+              aria-label="Select business"
             >
               {businesses.map((b) => (
                 <option key={b.id} value={b.id}>{b.name}</option>

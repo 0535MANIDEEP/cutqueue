@@ -135,16 +135,16 @@ export default function OwnerDashboard() {
 
         <div className="grid grid-cols-3 gap-4 mb-6">
           <div className="bg-white rounded-xl p-4 border border-gray-100 text-center">
-            <p className="text-3xl font-bold text-blue-600">{waiting.length}</p>
-            <p className="text-sm text-gray-500">Waiting</p>
+            <p className="text-4xl font-bold text-blue-600">{waiting.length}</p>
+            <p className="text-xs font-semibold uppercase tracking-wider text-gray-400 mt-1">Waiting</p>
           </div>
           <div className="bg-white rounded-xl p-4 border border-gray-100 text-center">
             <p className="text-3xl font-bold text-amber-600">{serving.length}</p>
-            <p className="text-sm text-gray-500">Serving</p>
+            <p className="text-xs font-semibold uppercase tracking-wider text-gray-400 mt-1">Serving</p>
           </div>
           <div className="bg-white rounded-xl p-4 border border-gray-100 text-center">
             <p className="text-3xl font-bold text-emerald-600">{todayBookings.length}</p>
-            <p className="text-sm text-gray-500">Bookings</p>
+            <p className="text-xs font-semibold uppercase tracking-wider text-gray-400 mt-1">Bookings</p>
           </div>
         </div>
 
@@ -171,7 +171,7 @@ export default function OwnerDashboard() {
           <div className="space-y-3">
             {serving.length > 0 && (
               <div>
-                <h3 className="text-sm font-medium text-gray-500 mb-2">Now Serving</h3>
+                <h3 className="text-xs font-semibold uppercase tracking-wider text-gray-400 mb-2">Now Serving</h3>
                 {serving.map(entry => (
                   <div key={entry.id} className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-3">
                     <div className="flex items-center justify-between">
@@ -192,10 +192,10 @@ export default function OwnerDashboard() {
             )}
 
             <div>
-              <h3 className="text-sm font-medium text-gray-500 mb-2">Waiting ({waiting.length})</h3>
+              <h3 className="text-xs font-semibold uppercase tracking-wider text-gray-400 mb-2">Waiting ({waiting.length})</h3>
               {waiting.length === 0 ? (
                 <div className="bg-white rounded-xl p-8 text-center border border-gray-100">
-                  <p className="text-gray-500">No one waiting</p>
+                  <p className="text-gray-400">No one waiting</p>
                 </div>
               ) : (
                 waiting.map((entry) => (
@@ -226,7 +226,7 @@ export default function OwnerDashboard() {
           <div className="space-y-3">
             {todayBookings.length === 0 ? (
               <div className="bg-white rounded-xl p-8 text-center border border-gray-100">
-                <p className="text-gray-500">No bookings today</p>
+                <p className="text-gray-400">No bookings today</p>
               </div>
             ) : (
               todayBookings.map(booking => (

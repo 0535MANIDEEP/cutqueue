@@ -127,7 +127,7 @@ export default function HomePage() {
             </FadeIn>
 
             <FadeIn delay={0.2}>
-              <p className="text-lg text-[#EFE9DA]/50 max-w-md mb-8 leading-relaxed">
+              <p className="text-lg text-[#EFE9DA]/70 max-w-md mb-8 leading-relaxed">
                 Queue management, online booking, and customer engagement — for any business where people wait. Barbershops, salons, clinics, and more.
               </p>
             </FadeIn>
@@ -157,7 +157,7 @@ export default function HomePage() {
                   className="aspect-square rounded-xl bg-[#141C18] border border-[#263329] flex flex-col items-center justify-center gap-2 hover:border-[#E8B547]/30 transition-colors"
                 >
                   <span className="text-2xl">{industry.icon}</span>
-                  <span className="text-[10px] text-[#EFE9DA]/50 text-center leading-tight">{industry.name}</span>
+                  <span className="text-xs text-[#EFE9DA]/70 text-center leading-tight">{industry.name}</span>
                 </div>
               ))}
             </div>
@@ -169,14 +169,14 @@ export default function HomePage() {
       <section className="py-12 border-t border-[#263329]/50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <FadeIn>
-            <p className="text-xs text-[#EFE9DA]/30 font-mono uppercase tracking-widest text-center mb-8">
+            <p className="text-xs text-[#EFE9DA]/50 font-mono uppercase tracking-widest text-center mb-8">
               Built for 12+ industries
             </p>
           </FadeIn>
           <StaggerChildren className="flex flex-wrap justify-center gap-x-8 gap-y-4">
             {industries.map((industry) => (
               <StaggerItem key={industry.name}>
-                <span className="text-[#EFE9DA]/20 text-sm font-medium tracking-wide hover:text-[#EFE9DA]/40 transition-colors duration-300 flex items-center gap-2">
+                <span className="text-[#EFE9DA]/40 text-sm font-medium tracking-wide hover:text-[#EFE9DA]/60 transition-colors duration-300 flex items-center gap-2">
                   <span>{industry.icon}</span> {industry.name}
                 </span>
               </StaggerItem>
@@ -192,7 +192,7 @@ export default function HomePage() {
             <h2 className="text-3xl md:text-4xl font-bold text-[#EFE9DA] mb-4 tracking-tight">
               How it works
             </h2>
-            <p className="text-[#EFE9DA]/40 max-w-lg mx-auto">
+            <p className="text-[#EFE9DA]/60 max-w-lg mx-auto">
               Three steps to start managing your queue. No training needed.
             </p>
           </FadeIn>
@@ -205,7 +205,7 @@ export default function HomePage() {
                     {s.step}
                   </div>
                   <h3 className="text-lg font-semibold text-[#EFE9DA] mb-2">{s.title}</h3>
-                  <p className="text-sm text-[#EFE9DA]/40">{s.description}</p>
+                  <p className="text-sm text-[#EFE9DA]/60">{s.description}</p>
                 </div>
               </ScaleIn>
             ))}
@@ -220,7 +220,7 @@ export default function HomePage() {
             <h2 className="text-3xl md:text-4xl font-bold text-[#EFE9DA] mb-4 tracking-tight">
               Everything you need
             </h2>
-            <p className="text-[#EFE9DA]/40 max-w-lg mx-auto">
+            <p className="text-[#EFE9DA]/60 max-w-lg mx-auto">
               Queue management, bookings, customer engagement, analytics. All in one place.
             </p>
           </FadeIn>
@@ -240,7 +240,7 @@ export default function HomePage() {
                     {feature.icon}
                   </div>
                   <h3 className="text-lg font-semibold text-[#EFE9DA] mb-2">{feature.title}</h3>
-                  <p className="text-sm text-[#EFE9DA]/40 leading-relaxed">{feature.description}</p>
+                  <p className="text-sm text-[#EFE9DA]/60 leading-relaxed">{feature.description}</p>
                 </div>
               </ScaleIn>
             ))}
@@ -255,7 +255,7 @@ export default function HomePage() {
             <h2 className="text-3xl md:text-4xl font-bold text-[#EFE9DA] mb-4 tracking-tight">
               Simple pricing
             </h2>
-            <p className="text-[#EFE9DA]/40 max-w-lg mx-auto">
+            <p className="text-[#EFE9DA]/60 max-w-lg mx-auto">
               Start free for 90 days. Upgrade when you&apos;re ready. No hidden fees.
             </p>
           </FadeIn>
@@ -373,7 +373,7 @@ export default function HomePage() {
           <h2 className="text-3xl md:text-4xl font-bold text-[#EFE9DA] mb-6 tracking-tight">
             Ready to start?
           </h2>
-          <p className="text-[#EFE9DA]/40 mb-8 max-w-md mx-auto">
+          <p className="text-[#EFE9DA]/60 mb-8 max-w-md mx-auto">
             Free 90-day trial. No credit card required. Set up in under 5 minutes.
           </p>
           <Link href="/auth/signup">

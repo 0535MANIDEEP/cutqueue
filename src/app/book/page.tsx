@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { Header } from "@/components/layout/header"
+import { Button } from "@/components/ui/button"
 import Heatmap from "@/components/ui/heatmap"
 import CalendarView from "@/components/ui/calendar-view"
 
@@ -138,6 +139,7 @@ export default function BookPage() {
                   className={`w-full flex items-center justify-between p-4 rounded-xl border-2 transition text-left ${
                     selectedService === s.id ? "border-blue-500 bg-blue-50" : "border-gray-100 hover:border-gray-200 bg-white"
                   }`}
+                  aria-label={`${s.name}, ${s.duration} minutes, ₹${s.price}`}
                 >
                   <div>
                     <p className="font-semibold text-gray-900">{s.name}</p>
@@ -189,6 +191,7 @@ export default function BookPage() {
                   value={customerName}
                   onChange={e => setCustomerName(e.target.value)}
                   placeholder="Enter your name"
+                  aria-label="Your name"
                   className="w-full border border-gray-200 rounded-xl px-4 py-3 text-lg"
                 />
               </div>
@@ -199,6 +202,7 @@ export default function BookPage() {
                   value={customerPhone}
                   onChange={e => setCustomerPhone(e.target.value)}
                   placeholder="+91 98765 43210"
+                  aria-label="WhatsApp number"
                   className="w-full border border-gray-200 rounded-xl px-4 py-3 text-lg"
                 />
               </div>
@@ -223,13 +227,15 @@ export default function BookPage() {
               )}
             </div>
 
-            <button
+            <Button
+              variant="primary"
+              className="w-full mt-4"
+              size="lg"
               onClick={() => setStep(4)}
               disabled={!customerName || !customerPhone}
-              className="w-full mt-4 bg-blue-600 text-white py-4 rounded-xl font-semibold text-lg hover:bg-blue-700 transition disabled:opacity-50"
             >
               Continue
-            </button>
+            </Button>
           </div>
         )}
 
@@ -269,19 +275,22 @@ export default function BookPage() {
             </div>
 
             <div className="flex gap-3 mt-4">
-              <button
+              <Button
+                variant="outline"
+                className="flex-1"
                 onClick={() => setStep(3)}
-                className="flex-1 bg-gray-100 text-gray-700 py-4 rounded-xl font-semibold hover:bg-gray-200 transition"
               >
                 Back
-              </button>
-              <button
+              </Button>
+              <Button
+                variant="primary"
+                className="flex-1"
                 onClick={handleBook}
-                disabled={loading}
-                className="flex-1 bg-blue-600 text-white py-4 rounded-xl font-semibold hover:bg-blue-700 transition disabled:opacity-50"
+                disabled={loading || !customerName || !customerPhone}
+                isLoading={loading}
               >
-                {loading ? "Booking..." : "Confirm Booking"}
-              </button>
+                Confirm Booking
+              </Button>
             </div>
           </div>
         )}

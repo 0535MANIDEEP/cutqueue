@@ -97,6 +97,7 @@ export default function OnboardingPage() {
             placeholder="Your Shop Name"
             value={businessName}
             onChange={(e) => setBusinessName(e.target.value)}
+            aria-label="Business name"
           />
           {selectedTemplate && (
             <div className="p-4 rounded-lg bg-[#141C18] border border-[#263329]">
