@@ -2,125 +2,65 @@ import Link from 'next/link'
 
 const footerLinks = {
   product: [
-    { label: 'Features', href: '/#features' },
-    { label: 'Queue Demo', href: '/queue' },
-    { label: 'Sign Up', href: '/auth/signup' },
+    { label: 'How it works', href: '/#how-it-works' },
+    { label: 'Pricing', href: '/#pricing' },
+    { label: 'Live demo', href: '/queue/join?shop=demo' },
+    { label: 'Start free trial', href: '/auth/signup' },
   ],
-  company: [
-    { label: 'Home', href: '/' },
-    { label: 'Live Queue', href: '/queue' },
+  support: [
+    { label: 'WhatsApp', href: 'https://wa.me/919876543210?text=Hi%20QueueForge%20%E2%80%94%20help%20me%20with%20my%20queue' },
+    { label: 'Email', href: 'mailto:support@queueforge.in' },
+    { label: 'FAQ', href: '/#faq' },
   ],
   legal: [
-    { label: 'Privacy', href: '#' },
-    { label: 'Terms', href: '#' },
-  ],
-  social: [
-    { label: 'GitHub', href: 'https://github.com/0535MANIDEEP/cutqueue' },
+    { label: 'Privacy — coming soon', href: '/privacy' },
+    { label: 'Terms — coming soon', href: '/terms' },
   ],
 }
 
 export function Footer() {
   return (
-    <footer className="bg-[#0F1B17] border-t border-[#2A3F3A]/50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
-          {/* Brand */}
-          <div className="col-span-2 md:col-span-1">
-            <Link href="/" className="flex items-center gap-2 mb-4">
-              <div className="w-8 h-8 rounded-lg bg-[#E8B547] flex items-center justify-center">
-                <svg
-                  className="w-5 h-5 text-[#0F1B17]"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                  />
-                </svg>
-              </div>
-              <span className="text-xl font-bold text-[#EFE9DA]">
-                Queue<span className="text-[#E8B547]">Forge</span>
-              </span>
-            </Link>
-            <p className="text-sm text-[#EFE9DA]/60 mb-4">
-              Build your queue, skip the wait. For any business where people wait.
-            </p>
-          </div>
-
-          {/* Product Links */}
+    <footer className="bg-[#0A0F0D] border-t border-[#1A2320]">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 py-10">
+        <div className="grid grid-cols-2 md:grid-cols-[1.5fr_1fr_1fr_1fr] gap-8">
           <div>
-            <h4 className="text-sm font-semibold text-[#EFE9DA] mb-4">Product</h4>
+            <Link href="/" className="flex items-center gap-2 mb-3">
+              <div className="w-8 h-8 rounded-lg bg-[#E8B547] flex items-center justify-center font-black text-[#0A0F0D] text-sm">Q</div>
+              <span className="font-bold text-[#EFE9DA]">QueueForge</span>
+            </Link>
+            <p className="text-sm text-[#EFE9DA]/50 leading-relaxed">
+              Queue + booking for every business where people wait. QR join, live ETA, no app.
+            </p>
+            <p className="text-xs text-[#EFE9DA]/30 mt-3">Early access • 90 days free • No fake reviews — 0 customers yet, be first.</p>
+          </div>
+          <div>
+            <h4 className="text-xs font-mono tracking-widest text-[#EFE9DA]/30 uppercase mb-3">Product</h4>
             <ul className="space-y-2">
               {footerLinks.product.map((link) => (
-                <li key={link.href}>
-                  <Link
-                    href={link.href}
-                    className="text-sm text-[#EFE9DA]/60 hover:text-[#EFE9DA] transition-colors"
-                  >
-                    {link.label}
-                  </Link>
-                </li>
+                <li key={link.href}><Link href={link.href} className="text-sm text-[#EFE9DA]/60 hover:text-[#EFE9DA]">{link.label}</Link></li>
               ))}
             </ul>
           </div>
-
-          {/* Company Links */}
           <div>
-            <h4 className="text-sm font-semibold text-[#EFE9DA] mb-4">Company</h4>
+            <h4 className="text-xs font-mono tracking-widest text-[#EFE9DA]/30 uppercase mb-3">Support</h4>
             <ul className="space-y-2">
-              {footerLinks.company.map((link) => (
-                <li key={link.href}>
-                  <Link
-                    href={link.href}
-                    className="text-sm text-[#EFE9DA]/60 hover:text-[#EFE9DA] transition-colors"
-                  >
-                    {link.label}
-                  </Link>
-                </li>
+              {footerLinks.support.map((link) => (
+                <li key={link.href}><a href={link.href} target={link.href.startsWith('http') ? '_blank' : undefined} rel={link.href.startsWith('http') ? 'noopener' : undefined} className="text-sm text-[#EFE9DA]/60 hover:text-[#EFE9DA]">{link.label}</a></li>
               ))}
             </ul>
           </div>
-
-          {/* Legal Links */}
           <div>
-            <h4 className="text-sm font-semibold text-[#EFE9DA] mb-4">Legal</h4>
+            <h4 className="text-xs font-mono tracking-widest text-[#EFE9DA]/30 uppercase mb-3">Legal</h4>
             <ul className="space-y-2">
               {footerLinks.legal.map((link) => (
-                <li key={link.href}>
-                  <Link
-                    href={link.href}
-                    className="text-sm text-[#EFE9DA]/60 hover:text-[#EFE9DA] transition-colors"
-                  >
-                    {link.label}
-                  </Link>
-                </li>
+                <li key={link.href}><Link href={link.href} className="text-sm text-[#EFE9DA]/40 hover:text-[#EFE9DA]/60">{link.label}</Link></li>
               ))}
             </ul>
           </div>
         </div>
-
-        {/* Bottom Bar */}
-        <div className="mt-12 pt-8 border-t border-[#2A3F3A]/50 flex flex-col md:flex-row justify-between items-center gap-4">
-          <p className="text-sm text-[#EFE9DA]/40" suppressHydrationWarning>
-            © {new Date().getFullYear()} QueueForge. All rights reserved.
-          </p>
-          <div className="flex gap-4">
-            {footerLinks.social.map((link) => (
-              <a
-                key={link.href}
-                href={link.href}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-[#EFE9DA]/40 hover:text-[#EFE9DA] transition-colors"
-              >
-                {link.label}
-              </a>
-            ))}
-          </div>
+        <div className="mt-10 pt-6 border-t border-[#1A2320] flex flex-col sm:flex-row justify-between gap-3">
+          <p className="text-xs text-[#EFE9DA]/30" suppressHydrationWarning>© {new Date().getFullYear()} QueueForge • IST • Real queue, real business hours</p>
+          <p className="text-xs text-[#EFE9DA]/20">Built for India — works on 2G, no app download</p>
         </div>
       </div>
     </footer>

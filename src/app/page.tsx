@@ -61,14 +61,8 @@ export default function HomePage() {
     <div className="min-h-screen bg-[#0A0F0D] selection:bg-[#E8B547]/30">
       <style>{`@import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@500&display=swap');`}</style>
       <div className="pointer-events-none fixed inset-0 opacity-[0.035] mix-blend-soft-light" style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")` }} />
-      <nav className="sticky top-0 z-40 backdrop-blur-xl bg-[#0A0F0D]/70 border-b border-[#1A2320]">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 h-[60px] flex items-center justify-between">
-          <div className="flex items-center gap-2"><div className="w-8 h-8 rounded-lg bg-[#E8B547] flex items-center justify-center font-black text-[#0A0F0D] text-sm">Q</div><span className="font-bold tracking-tight text-[#EFE9DA]">QueueForge</span><span className="hidden sm:inline text-xs px-2 py-1 rounded-full bg-[#1E2528] border border-[#263329] text-[#EFE9DA]/60 ml-2">For barbershops • salons • clinics</span></div>
-          <div className="flex items-center gap-2"><Link href="/auth/signin" className="hidden sm:inline text-sm text-[#EFE9DA]/70 hover:text-[#EFE9DA] px-3 py-2">Sign in</Link><Link href="/auth/signup"><Button variant="primary" size="sm" className="rounded-full px-5">Start free trial →</Button></Link></div>
-        </div>
-      </nav>
 
-      <section ref={ref} className="relative overflow-hidden">
+      <section ref={ref} className="relative overflow-hidden pt-[60px]">
         <motion.div style={{ y, opacity }} className="absolute inset-0 bg-[radial-gradient(900px_500px_at_50%_-10%,rgba(232,181,71,0.14),transparent_60%),radial-gradient(700px_400px_at_90%_15%,rgba(16,185,129,0.09),transparent_60%)]" />
         <div className="absolute inset-0 opacity-[0.04]" style={{ backgroundImage: 'linear-gradient(#EFE9DA 1px, transparent 1px), linear-gradient(90deg, #EFE9DA 1px, transparent 1px)', backgroundSize: '32px 32px' }} />
         <div className="absolute -right-10 top-10 hidden lg:block text-[200px] font-black leading-none text-white/[0.02] select-none tracking-[-0.06em]">QUEUE</div>
@@ -184,7 +178,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      <section className="px-4 sm:px-6 pb-6">
+      <section id="pricing" className="px-4 sm:px-6 pb-6">
         <div className="max-w-6xl mx-auto">
           <h2 className="text-2xl sm:text-3xl font-black tracking-tight text-[#EFE9DA]">Simple pricing. Scales with you.</h2><p className="text-[#EFE9DA]/60 mt-1">Start free for 90 days. Upgrade only when you need more.</p>
           <div className="mt-6 grid md:grid-cols-3 gap-4">
@@ -206,7 +200,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      <section className="px-4 sm:px-6 py-8">
+      <section id="faq" className="px-4 sm:px-6 py-8">
         <div className="max-w-6xl mx-auto rounded-[20px] bg-[#111815] border border-[#263329] p-5 sm:p-6">
           <h3 className="text-xl font-black text-[#EFE9DA]">FAQ — the last objections</h3>
           <div className="mt-4 divide-y divide-[#1E2528]">
