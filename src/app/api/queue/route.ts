@@ -68,15 +68,6 @@ export async function GET(req: Request) {
 export async function POST(req: Request) {
   try {
     const session = await auth()
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-    }
-
-    const permCheck = await requirePermission(session as { user: { role: Role; id: string } }, "queue:create")
-    if (!permCheck.allowed) {
-      return NextResponse.json({ error: permCheck.error }, { status: permCheck.error === "Unauthorized" ? 401 : 403 })
-    }
-
     const body = await req.json()
     const parsed = queueJoinSchema.safeParse(body)
 
@@ -87,7 +78,20 @@ export async function POST(req: Request) {
       )
     }
 
-    const { businessId, serviceType } = parsed.data
+    const { businessId, serviceType, guestName, guestPhone } = parsed.data as any
+    let customerId: string | null = session?.user?.id || null
+    let isGuest = false
+    if (!customerId) {
+      if (!guestName || !guestPhone) {
+        return NextResponse.json({ error: "Sign in or provide guestName + guestPhone" }, { status: 400 })
+      }
+      isGuest = true
+    } else {
+      const permCheck = await requirePermission(session as { user: { role: Role; id: string } }, "queue:create")
+      if (!permCheck.allowed) {
+        return NextResponse.json({ error: permCheck.error }, { status: permCheck.error === "Unauthorized" ? 401 : 403 })
+      }
+    }
 
     const business = await prisma.business.findUnique({
       where: { id: businessId },
@@ -139,17 +143,21 @@ export async function POST(req: Request) {
         }
       }
 
-      // Check existing entries for this user (within transaction)
-      const existingEntry = await tx.queueEntry.findFirst({
-        where: {
-          queueId: lockedQueue.id,
-          customerId: session.user.id,
-          status: { in: ["WAITING", "CALLED", "IN_PROGRESS"] },
-        },
-      })
-
-      if (existingEntry) {
-        throw new Error("Already in queue")
+      let effectiveCustomerId = customerId!
+      if (isGuest) {
+        const guestUser = await tx.user.upsert({
+          where: { phone: guestPhone! } as any,
+          create: { email: `guest-${Date.now()}-${Math.random().toString(36).slice(2,6)}@queue.local`, name: guestName, phone: guestPhone, role: "CUSTOMER" } as any,
+          update: { name: guestName } as any,
+        }).catch(async () => {
+          return await tx.user.create({ data: { email: `guest-${Date.now()}-${Math.random().toString(36).slice(2,6)}@queue.local`, name: guestName!, phone: guestPhone!, role: "CUSTOMER" } as any })
+        })
+        effectiveCustomerId = (guestUser as any).id
+        const dup = await tx.queueEntry.findFirst({ where: { queueId: lockedQueue.id, customerId: effectiveCustomerId!, status: { in: ["WAITING", "CALLED", "IN_PROGRESS"] } } })
+        if (dup) throw new Error("Already in queue")
+      } else {
+        const existingEntry = await tx.queueEntry.findFirst({ where: { queueId: lockedQueue.id, customerId: customerId!, status: { in: ["WAITING", "CALLED", "IN_PROGRESS"] } } })
+        if (existingEntry) throw new Error("Already in queue")
       }
 
       // Daily reset: ticket 1..N per day (psychologically small), not forever-growing
@@ -163,7 +171,7 @@ export async function POST(req: Request) {
       const entry = await tx.queueEntry.create({
         data: {
           queueId: lockedQueue.id,
-          customerId: session.user.id,
+          customerId: effectiveCustomerId!,
           serviceType: serviceType || "General",
           ticketNumber,
           status: "WAITING",
@@ -179,7 +187,7 @@ export async function POST(req: Request) {
 
     await notifyQueueJoined({
       id: entry.id,
-      userId: session.user.id,
+      userId: (entry as any).customerId,
       ticketNumber: entry.ticketNumber,
       position: waitingCount,
       estimatedWait: waitingCount * queue.avgServiceTime,

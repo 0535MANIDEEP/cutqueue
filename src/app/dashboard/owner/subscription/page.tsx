@@ -224,14 +224,15 @@ export default function SubscriptionPage() {
             </div>
 
             {/* Instructions */}
-            <div className="bg-blue-50 rounded-lg p-4 space-y-2">
-              <p className="text-sm font-medium text-blue-900">How to activate:</p>
-              <ol className="text-sm text-blue-800 space-y-1 list-decimal list-inside">
-                <li>Scan the QR code and pay</li>
-                <li>Take a screenshot of the payment confirmation</li>
-                <li>Send the screenshot to the admin</li>
-                <li>Your plan will be activated within 24 hours</li>
+            <div className="bg-[#E8B547]/10 border border-[#E8B547]/20 rounded-xl p-4 space-y-2">
+              <p className="text-sm font-bold text-[#0A0F0D]">How to activate — instant:</p>
+              <ol className="text-sm text-[#0A0F0D]/70 space-y-1 list-decimal list-inside">
+                <li>Scan QR and pay (any UPI app)</li>
+                <li>Tap “I paid — activate now” below</li>
+                <li>Auto-activated for 30 days • No wait</li>
               </ol>
+              <button onClick={async () => { const res = await fetch("/api/trial", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ plan: selectedPlan }) }); if (res.ok) location.reload(); else alert("Activation failed — WhatsApp admin") }} className="w-full mt-3 py-2.5 rounded-full bg-[#E8B547] text-[#0A0F0D] font-black">I paid — activate now ✓</button>
+              <p className="text-xs text-[#0A0F0D]/50 text-center">If auto fails, send screenshot to admin — fallback in 5 min</p>
             </div>
 
             <div className="mt-4 text-center">

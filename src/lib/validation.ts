@@ -20,6 +20,8 @@ export const bookingSchema = z.object({
 export const queueJoinSchema = z.object({
   businessId: z.string().min(1),
   serviceType: z.string().max(50).optional(),
+  guestName: z.string().max(100).optional(),
+  guestPhone: z.string().max(20).optional(),
 })
 
 export const queueActionSchema = z.object({

@@ -102,3 +102,16 @@ export async function GET() {
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })
   }
 }
+export async function POST(req: Request) {
+  try {
+    const session = await auth()
+    if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    const { plan } = await req.json()
+    if (!plan || !["STARTER","PRO","BUSINESS"].includes(plan)) return NextResponse.json({ error: "Invalid plan" }, { status: 400 })
+    const business = await prisma.business.findFirst({ where: { ownerId: session.user.id } })
+    if (!business) return NextResponse.json({ error: "No business" }, { status: 404 })
+    const expiresAt = new Date(); expiresAt.setDate(expiresAt.getDate() + 30)
+    await prisma.business.update({ where: { id: business.id }, data: { plan, planExpiresAt: expiresAt } as any })
+    return NextResponse.json({ success: true, plan, expiresAt })
+  } catch (e) { return NextResponse.json({ error: "Activation failed" }, { status: 500 }) }
+}
