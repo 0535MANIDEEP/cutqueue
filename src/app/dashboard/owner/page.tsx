@@ -5,33 +5,42 @@ import { Header } from "@/components/layout/header"
 
 interface QueueEntry {
   id: string
-  position: number
+  ticketNumber: number
   status: string
-  customer: { name: string; phone: string }
-  service: { name: string; duration: number }
-  estimatedWait: number
+  serviceType: string
+  joinedAt: string
+  customerId: string
+  customer: { name: string }
+  position: number | null
 }
 
 interface Booking {
   id: string
   scheduledAt: string
   status: string
-  customer: { name: string; phone: string }
+  customer: { name: string }
   service: { name: string }
 }
 
 export default function OwnerDashboard() {
   const [queue, setQueue] = useState<QueueEntry[]>([])
   const [bookings, setBookings] = useState<Booking[]>([])
+  const [services, setServices] = useState<{ id: string; name: string }[]>([])
   const [businessId, setBusinessId] = useState<string | null>(null)
   const [tab, setTab] = useState<"queue" | "bookings">("queue")
   const [error, setError] = useState("")
+  const [showWalkIn, setShowWalkIn] = useState(false)
+  const [walkInName, setWalkInName] = useState("")
+  const [walkInPhone, setWalkInPhone] = useState("")
+  const [walkInService, setWalkInService] = useState("")
+  const [addingWalkIn, setAddingWalkIn] = useState(false)
 
   const fetchData = useCallback(async (bid: string) => {
     try {
-      const [queueRes, bookingsRes] = await Promise.all([
+      const [queueRes, bookingsRes, servicesRes] = await Promise.all([
         fetch(`/api/queue?businessId=${bid}`),
         fetch(`/api/bookings?businessId=${bid}`),
+        fetch(`/api/services?businessId=${bid}`),
       ])
       if (queueRes.ok) {
         const d = await queueRes.json()
@@ -40,6 +49,10 @@ export default function OwnerDashboard() {
       if (bookingsRes.ok) {
         const d = await bookingsRes.json()
         setBookings(Array.isArray(d) ? d : d.bookings || [])
+      }
+      if (servicesRes.ok) {
+        const d = await servicesRes.json()
+        setServices(Array.isArray(d) ? d : [])
       }
     } catch {
       setError("Failed to load data")
@@ -63,9 +76,40 @@ export default function OwnerDashboard() {
 
   useEffect(() => {
     if (!businessId) return
-    const interval = setInterval(() => fetchData(businessId), 10000)
+    const interval = setInterval(() => fetchData(businessId), 5000)
     return () => clearInterval(interval)
   }, [businessId, fetchData])
+
+  const addWalkIn = async () => {
+    if (!walkInName.trim() || !businessId) return
+    setAddingWalkIn(true)
+    try {
+      const res = await fetch("/api/queue/walkin", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          businessId,
+          customerName: walkInName.trim(),
+          customerPhone: walkInPhone.trim() || undefined,
+          serviceType: walkInService || "General",
+        }),
+      })
+      if (!res.ok) {
+        const err = await res.json()
+        setError(err.error || "Failed to add walk-in")
+        return
+      }
+      setWalkInName("")
+      setWalkInPhone("")
+      setWalkInService("")
+      setShowWalkIn(false)
+      if (businessId) fetchData(businessId)
+    } catch {
+      setError("Network error")
+    } finally {
+      setAddingWalkIn(false)
+    }
+  }
 
   const callNext = async (entryId: string) => {
     try {
@@ -76,12 +120,12 @@ export default function OwnerDashboard() {
       })
       if (!res.ok) {
         const err = await res.json()
-        setError(err.error || "Failed to call next customer")
+        setError(err.error || "Failed to call next")
         return
       }
       if (businessId) fetchData(businessId)
     } catch {
-      setError("Network error. Please try again.")
+      setError("Network error")
     }
   }
 
@@ -94,12 +138,12 @@ export default function OwnerDashboard() {
       })
       if (!res.ok) {
         const err = await res.json()
-        setError(err.error || "Failed to complete service")
+        setError(err.error || "Failed to complete")
         return
       }
       if (businessId) fetchData(businessId)
     } catch {
-      setError("Network error. Please try again.")
+      setError("Network error")
     }
   }
 
@@ -117,12 +161,12 @@ export default function OwnerDashboard() {
       }
       if (businessId) fetchData(businessId)
     } catch {
-      setError("Network error. Please try again.")
+      setError("Network error")
     }
   }
 
   const waiting = queue.filter(e => e.status === "WAITING")
-  const serving = queue.filter(e => e.status === "SERVING" || e.status === "CALLED" || e.status === "IN_PROGRESS")
+  const serving = queue.filter(e => e.status === "CALLED" || e.status === "IN_PROGRESS")
   const todayStr = new Date().toLocaleDateString("en-CA")
   const todayBookings = bookings.filter(b => new Date(b.scheduledAt).toLocaleDateString("en-CA") === todayStr)
 
@@ -173,6 +217,60 @@ export default function OwnerDashboard() {
 
         {tab === "queue" && (
           <div className="space-y-3">
+            {!showWalkIn ? (
+              <button
+                onClick={() => setShowWalkIn(true)}
+                className="w-full bg-blue-600 text-white py-3 rounded-xl text-base font-semibold hover:bg-blue-700 transition"
+              >
+                + Add Walk-in
+              </button>
+            ) : (
+              <div className="bg-white border border-gray-200 rounded-xl p-4 space-y-3">
+                <p className="font-semibold text-gray-900">New Walk-in</p>
+                <input
+                  type="text"
+                  placeholder="Customer name *"
+                  value={walkInName}
+                  onChange={(e) => setWalkInName(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm"
+                  autoFocus
+                />
+                <input
+                  type="tel"
+                  placeholder="Phone (optional)"
+                  value={walkInPhone}
+                  onChange={(e) => setWalkInPhone(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm"
+                />
+                <select
+                  value={walkInService}
+                  onChange={(e) => setWalkInService(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm"
+                >
+                  <option value="">Select service</option>
+                  {services.map(s => (
+                    <option key={s.id} value={s.name}>{s.name}</option>
+                  ))}
+                  <option value="General">General</option>
+                </select>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setShowWalkIn(false)}
+                    className="flex-1 py-2 rounded-lg text-sm font-medium border border-gray-200 text-gray-600"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={addWalkIn}
+                    disabled={!walkInName.trim() || addingWalkIn}
+                    className="flex-1 py-2 rounded-lg text-sm font-semibold bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50"
+                  >
+                    {addingWalkIn ? "Adding..." : "Add to Queue"}
+                  </button>
+                </div>
+              </div>
+            )}
+
             {serving.length > 0 && (
               <div>
                 <h3 className="text-xs font-semibold uppercase tracking-wider text-gray-400 mb-2">Now Serving</h3>
@@ -181,7 +279,7 @@ export default function OwnerDashboard() {
                     <div className="flex items-center justify-between">
                       <div>
                         <p className="font-semibold text-gray-900">{entry.customer?.name}</p>
-                        <p className="text-sm text-gray-600">{entry.service?.name} • {entry.service?.duration} min</p>
+                        <p className="text-sm text-gray-600">{entry.serviceType}</p>
                       </div>
                       <button
                         onClick={() => completeService(entry.id)}
@@ -206,11 +304,11 @@ export default function OwnerDashboard() {
                   <div key={entry.id} className="bg-white border border-gray-100 rounded-xl p-4 mb-3 flex items-center justify-between">
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-700 font-bold">
-                        {entry.position}
+                        #{entry.ticketNumber}
                       </div>
                       <div>
                         <p className="font-medium text-gray-900">{entry.customer?.name}</p>
-                        <p className="text-sm text-gray-500">{entry.service?.name} • ~{entry.estimatedWait} min</p>
+                        <p className="text-sm text-gray-500">{entry.serviceType}</p>
                       </div>
                     </div>
                     <button
