@@ -1,11 +1,22 @@
 import type { Metadata } from 'next'
-import { GeistSans } from 'geist/font/sans'
-import { GeistMono } from 'geist/font/mono'
+import localFont from 'next/font/local'
 import { Providers } from '@/components/providers'
 import { Header } from '@/components/layout/header'
 import { Footer } from '@/components/layout/footer'
 import { ToastProvider } from '@/components/ui/toast'
 import './globals.css'
+
+const geistSans = localFont({
+  src: '../fonts/GeistSans-Variable.ttf',
+  variable: '--font-geist-sans',
+  weight: '100 900',
+})
+
+const geistMono = localFont({
+  src: '../fonts/GeistMono-Variable.ttf',
+  variable: '--font-geist-mono',
+  weight: '100 900',
+})
 
 export const metadata: Metadata = {
   title: 'QueueForge — Build Your Queue, Skip the Wait',
@@ -34,8 +45,8 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en" className={GeistSans.variable}>
-      <body className={`${GeistSans.className} ${GeistMono.className} min-h-screen bg-[#0A0F0D] text-[#EFE9DA] antialiased`}>
+    <html lang="en" className={geistSans.variable}>
+      <body className={`${geistSans.className} ${geistMono.className} min-h-screen bg-[#0A0F0D] text-[#EFE9DA] antialiased`}>
         <Providers>
           <ToastProvider>
             <Header />
