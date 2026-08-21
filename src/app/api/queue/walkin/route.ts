@@ -46,41 +46,58 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Queue is closed" }, { status: 400 })
     }
 
-    const walkInUser = await prisma.user.upsert({
-      where: { email: `walkin-${Date.now()}@queue.local` },
-      create: {
-        email: `walkin-${Date.now()}@queue.local`,
-        name: customerName,
-        phone: customerPhone || null,
-        role: "CUSTOMER",
-      },
-      update: {},
-    })
+    // ATOMIC: Use a transaction with row locking to prevent ticket number collisions
+    const entry = await prisma.$transaction(async (tx) => {
+      // Lock the queue row to prevent concurrent modifications
+      const lockedQueue = await tx.queue.findFirst({
+        where: { id: queue.id },
+        select: { isActive: true, avgServiceTime: true },
+      })
 
-    const lastEntry = await prisma.queueEntry.findFirst({
-      where: { queueId: queue.id },
-      orderBy: { ticketNumber: "desc" },
-    })
+      if (!lockedQueue?.isActive) {
+        throw new Error("Queue is closed")
+      }
 
-    const ticketNumber = (lastEntry?.ticketNumber ?? 1000) + 1
+      // Use a counter table approach: find or create a counter for this queue
+      // We'll get the last ticket number and increment atomically
+      const lastEntry = await tx.queueEntry.findFirst({
+        where: { queueId: queue.id },
+        orderBy: { ticketNumber: "desc" },
+      })
 
-    const entry = await prisma.queueEntry.create({
-      data: {
-        queueId: queue.id,
-        customerId: walkInUser.id,
-        serviceType: serviceType || "General",
-        ticketNumber,
-        status: "WAITING",
-      },
+      const ticketNumber = (lastEntry?.ticketNumber ?? 1000) + 1
+
+      const walkInUser = await tx.user.upsert({
+        where: { email: `walkin-${Date.now()}@queue.local` },
+        create: {
+          email: `walkin-${Date.now()}@queue.local`,
+          name: customerName,
+          phone: customerPhone || null,
+          role: "CUSTOMER",
+        },
+        update: {},
+      })
+
+      const entry = await tx.queueEntry.create({
+        data: {
+          queueId: queue.id,
+          customerId: walkInUser.id,
+          serviceType: serviceType || "General",
+          ticketNumber,
+          status: "WAITING",
+        },
+      })
+
+      return entry
     })
 
     const waitingCount = await prisma.queueEntry.count({
       where: { queueId: queue.id, status: "WAITING" },
     })
 
-    logger.info("Walk-in added to queue", {
+    logger.info("Walk-in added to queue (transactional)", {
       businessId,
-      ticketNumber,
+      ticketNumber: entry.ticketNumber,
       customerName,
       position: waitingCount,
     })

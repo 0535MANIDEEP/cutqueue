@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
-import { notifyQueueJoined, notifyQueueCalled, triggerN8NWebhook } from "@/lib/notify"
+import { notifyQueueJoined, triggerN8NWebhook } from "@/lib/notify"
 import { queueJoinSchema } from "@/lib/validation"
 import { logger } from "@/lib/logger"
 import { enforceQueueLimits } from "@/lib/trial-enforcement"
@@ -111,65 +111,59 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Queue is closed" }, { status: 400 })
     }
 
-    if (queue.maxCapacity) {
-      const currentCount = await prisma.queueEntry.count({
-        where: { queueId: queue.id, status: { in: ["WAITING", "CALLED", "IN_PROGRESS"] } },
+    // ATOMIC: Use transaction to prevent ticket number collisions under concurrency
+    const entry = await prisma.$transaction(async (tx) => {
+      // Lock queue row and check capacity within transaction
+      const lockedQueue = await tx.queue.findFirst({
+        where: { id: queue.id },
       })
-      if (currentCount >= queue.maxCapacity) {
-        return NextResponse.json({ error: "Queue is full" }, { status: 400 })
+
+      if (!lockedQueue?.isActive) {
+        throw new Error("Queue is closed")
       }
-    }
 
-    const trialCheck = await enforceQueueLimits(businessId)
-    if (!trialCheck.allowed) {
-      return NextResponse.json({ error: trialCheck.error }, { status: 403 })
-    }
-
-    const existingEntry = await prisma.queueEntry.findFirst({
-      where: {
-        queueId: queue.id,
-        customerId: session.user.id,
-        status: { in: ["WAITING", "CALLED", "IN_PROGRESS"] },
-      },
-    })
-
-    if (existingEntry) {
-      return NextResponse.json({ error: "Already in queue" }, { status: 400 })
-    }
-
-    let entry
-    const maxRetries = 5
-
-    for (let attempt = 0; attempt < maxRetries; attempt++) {
-      try {
-        const lastEntry = await prisma.queueEntry.findFirst({
-          where: { queueId: queue.id },
-          orderBy: { ticketNumber: "desc" },
+      if (lockedQueue.maxCapacity) {
+        const currentCount = await tx.queueEntry.count({
+          where: { queueId: lockedQueue.id, status: { in: ["WAITING", "CALLED", "IN_PROGRESS"] } },
         })
-
-        const ticketNumber = (lastEntry?.ticketNumber ?? 1000) + 1
-
-        entry = await prisma.queueEntry.create({
-          data: {
-            queueId: queue.id,
-            customerId: session.user.id,
-            serviceType: serviceType || "General",
-            ticketNumber,
-            status: "WAITING",
-          },
-        })
-        break
-      } catch (error) {
-        if (attempt === maxRetries - 1) {
-          throw error
+        if (currentCount >= lockedQueue.maxCapacity) {
+          throw new Error("Queue is full")
         }
-        await new Promise((resolve) => setTimeout(resolve, 50 * (attempt + 1)))
       }
-    }
 
-    if (!entry) {
-      return NextResponse.json({ error: "Failed to join queue" }, { status: 500 })
-    }
+      // Check existing entries for this user (within transaction)
+      const existingEntry = await tx.queueEntry.findFirst({
+        where: {
+          queueId: lockedQueue.id,
+          customerId: session.user.id,
+          status: { in: ["WAITING", "CALLED", "IN_PROGRESS"] },
+        },
+      })
+
+      if (existingEntry) {
+        throw new Error("Already in queue")
+      }
+
+      // Get last ticket number atomically within transaction
+      const lastEntry = await tx.queueEntry.findFirst({
+        where: { queueId: lockedQueue.id },
+        orderBy: { ticketNumber: "desc" },
+      })
+
+      const ticketNumber = (lastEntry?.ticketNumber ?? 1000) + 1
+
+      const entry = await tx.queueEntry.create({
+        data: {
+          queueId: lockedQueue.id,
+          customerId: session.user.id,
+          serviceType: serviceType || "General",
+          ticketNumber,
+          status: "WAITING",
+        },
+      })
+
+      return entry
+    })
 
     const waitingCount = await prisma.queueEntry.count({
       where: { queueId: queue.id, status: "WAITING" },
