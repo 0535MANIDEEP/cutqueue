@@ -2,7 +2,7 @@
 
 import { useSession } from "next-auth/react"
 import { useRouter } from "next/navigation"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -18,12 +18,13 @@ export default function OnboardingPage() {
   const [businessName, setBusinessName] = useState("")
   const [templateSlug, setTemplateSlug] = useState("barbershop")
 
-  if (status === "unauthenticated") {
-    router.push("/auth/signin")
-    return null
-  }
+  useEffect(() => {
+    if (status === "unauthenticated") {
+      router.push("/auth/signin")
+    }
+  }, [status, router])
 
-  if (status === "loading") {
+  if (status === "unauthenticated" || status === "loading") {
     return (
       <div className="min-h-screen bg-[#0A0F0D] flex items-center justify-center">
         <div className="text-[#EFE9DA]/50">Loading...</div>

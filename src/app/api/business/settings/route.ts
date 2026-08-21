@@ -21,7 +21,14 @@ export async function GET() {
       return NextResponse.json({ error: "No business found" }, { status: 404 })
     }
 
-    return NextResponse.json(business)
+    const safeBusiness = { ...business }
+    if (safeBusiness.settings && typeof safeBusiness.settings === "object") {
+      const settings = { ...safeBusiness.settings } as Record<string, unknown>
+      delete settings.credentials
+      safeBusiness.settings = settings as typeof safeBusiness.settings
+    }
+
+    return NextResponse.json(safeBusiness)
   } catch (error) {
     console.error("Route error:", error)
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })

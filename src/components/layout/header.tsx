@@ -1,5 +1,6 @@
 'use client'
 
+import { useState } from 'react'
 import Link from 'next/link'
 import { useSession, signOut } from 'next-auth/react'
 import { Button } from '@/components/ui/button'
@@ -13,6 +14,7 @@ const publicLinks = [
 export function Header() {
   const { data: session } = useSession()
   const role = session?.user?.role as string | undefined
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
 
   const getDashboardLabel = () => {
     switch (role) {
@@ -83,10 +85,7 @@ export function Header() {
 
           <button
             className="md:hidden p-2 text-[#EFE9DA]"
-            onClick={() => {
-              const menu = document.getElementById('mobile-menu')
-              if (menu) menu.classList.toggle('hidden')
-            }}
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
             aria-label="Toggle menu"
           >
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -95,7 +94,7 @@ export function Header() {
           </button>
         </div>
 
-        <div id="mobile-menu" className="hidden md:hidden py-4 border-t border-[#2A3F3A]/50">
+        <div id="mobile-menu" className={`${mobileMenuOpen ? '' : 'hidden'} md:hidden py-4 border-t border-[#2A3F3A]/50`}>
           <nav className="flex flex-col gap-2">
             {publicLinks.map((link) => (
               <Link

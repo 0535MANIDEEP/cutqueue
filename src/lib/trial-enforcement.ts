@@ -1,14 +1,19 @@
 "use server"
 
 import { prisma } from "./prisma"
-import { isTrialActive, getTrialConfig } from "./trial"
+import { getTrialConfig } from "./trial"
+
+async function getBusinessPlan(businessId: string): Promise<string> {
+  const business = await prisma.business.findUnique({
+    where: { id: businessId },
+    select: { plan: true },
+  })
+  return business?.plan || "FREE"
+}
 
 export async function enforceBookingLimits(businessId: string): Promise<{ allowed: boolean; error?: string }> {
-  if (!isTrialActive()) {
-    return { allowed: true }
-  }
-
-  const config = getTrialConfig()
+  const plan = await getBusinessPlan(businessId)
+  const config = getTrialConfig(plan)
   const now = new Date()
   const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
 
@@ -30,11 +35,8 @@ export async function enforceBookingLimits(businessId: string): Promise<{ allowe
 }
 
 export async function enforceServiceLimits(businessId: string): Promise<{ allowed: boolean; error?: string }> {
-  if (!isTrialActive()) {
-    return { allowed: true }
-  }
-
-  const config = getTrialConfig()
+  const plan = await getBusinessPlan(businessId)
+  const config = getTrialConfig(plan)
   const servicesCount = await prisma.service.count({
     where: { businessId },
   })
@@ -50,11 +52,8 @@ export async function enforceServiceLimits(businessId: string): Promise<{ allowe
 }
 
 export async function enforceStaffLimits(businessId: string): Promise<{ allowed: boolean; error?: string }> {
-  if (!isTrialActive()) {
-    return { allowed: true }
-  }
-
-  const config = getTrialConfig()
+  const plan = await getBusinessPlan(businessId)
+  const config = getTrialConfig(plan)
   const staffCount = await prisma.staff.count({
     where: { businessId },
   })
@@ -70,11 +69,8 @@ export async function enforceStaffLimits(businessId: string): Promise<{ allowed:
 }
 
 export async function enforceQueueLimits(businessId: string): Promise<{ allowed: boolean; error?: string }> {
-  if (!isTrialActive()) {
-    return { allowed: true }
-  }
-
-  const config = getTrialConfig()
+  const plan = await getBusinessPlan(businessId)
+  const config = getTrialConfig(plan)
   const queue = await prisma.queue.findFirst({
     where: { businessId },
   })

@@ -66,6 +66,7 @@ const roleConfigs: Record<Role, RoleConfig> = {
     navItems: [
       { label: "Dashboard", href: "/dashboard/owner" },
       { label: "Services", href: "/dashboard/owner/services" },
+      { label: "Subscription", href: "/dashboard/owner/subscription" },
       { label: "Settings", href: "/dashboard/owner/settings" },
     ],
     permissions: [

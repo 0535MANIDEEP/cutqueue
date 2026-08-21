@@ -15,14 +15,18 @@ interface Booking {
 export default function CustomerDashboard() {
   const [bookings, setBookings] = useState<Booking[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState("")
 
   useEffect(() => {
     fetch("/api/bookings")
-      .then(r => r.json())
-      .then(d => {
-        setBookings(d.bookings || [])
+      .then(r => {
+        if (!r.ok) throw new Error("Failed to load bookings")
+        return r.json()
       })
-      .catch(() => {})
+      .then(d => {
+        setBookings(Array.isArray(d) ? d : d.bookings || [])
+      })
+      .catch(() => setError("Failed to load bookings"))
       .finally(() => setLoading(false))
   }, [])
 
@@ -34,6 +38,13 @@ export default function CustomerDashboard() {
       <Header />
       <div className="max-w-2xl mx-auto px-4 py-6">
         <h1 className="text-2xl font-bold text-gray-900 mb-6">My Bookings</h1>
+
+        {error && (
+          <div className="mb-4 p-3 rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm flex items-center justify-between">
+            <span>{error}</span>
+            <button onClick={() => setError("")} className="text-red-500 hover:text-red-700 font-bold">×</button>
+          </div>
+        )}
 
         {/* Quick Actions */}
         <div className="grid grid-cols-2 gap-3 mb-8">

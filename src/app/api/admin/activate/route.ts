@@ -22,7 +22,7 @@ export async function POST(request: Request) {
 
     const business = await prisma.business.findUnique({
       where: { slug: shopSlug },
-      select: { id: true, name: true, plan: true },
+      select: { id: true, name: true, plan: true, ownerId: true },
     })
 
     if (!business) {
@@ -42,7 +42,7 @@ export async function POST(request: Request) {
 
     await prisma.notification.create({
       data: {
-        userId: business.id,
+        userId: business.ownerId,
         type: "SYSTEM",
         title: "Plan Activated",
         message: `Your ${plan} plan has been activated! Expires on ${expiresAt.toLocaleDateString("en-IN")}`,

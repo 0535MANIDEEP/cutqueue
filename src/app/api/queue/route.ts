@@ -101,6 +101,7 @@ export async function POST(req: Request) {
         data: {
           businessId,
           isActive: true,
+          avgServiceTime: 30,
         },
       })
     }

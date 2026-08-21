@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
-import { getTrialConfig, checkTrialLimits, getTrialWarnings, PRICING_TIERS, REVENUE_PROJECTION } from "@/lib/trial"
+import { getTrialConfig, getTrialWarnings, PRICING_TIERS, getBusinessPlanStatus } from "@/lib/trial"
 
 export async function GET() {
   try {
@@ -9,8 +9,6 @@ export async function GET() {
     if (!session?.user?.id) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
-
-    const config = getTrialConfig()
 
     if (session.user.role === "ADMIN") {
       const totalBusinesses = await prisma.business.count()
@@ -20,7 +18,6 @@ export async function GET() {
 
       return NextResponse.json({
         type: "admin",
-        config,
         stats: {
           totalBusinesses,
           activeBusinesses,
@@ -28,7 +25,6 @@ export async function GET() {
           totalUsers,
         },
         pricing: PRICING_TIERS,
-        projection: REVENUE_PROJECTION,
       })
     }
 
@@ -39,17 +35,17 @@ export async function GET() {
     if (!business) {
       return NextResponse.json({
         type: "customer",
-        config,
         message: "No business found. Create one to start your free trial.",
       })
     }
 
+    const planStatus = await getBusinessPlanStatus(business.id)
+    if (!planStatus) {
+      return NextResponse.json({ error: "Business not found" }, { status: 404 })
+    }
+
+    const config = getTrialConfig(business.plan)
     const now = new Date()
-    const trialStart = business.createdAt
-    const trialEnd = new Date(trialStart.getTime() + config.trialDays * 24 * 60 * 60 * 1000)
-    const daysUsed = Math.ceil((now.getTime() - trialStart.getTime()) / (1000 * 60 * 60 * 24))
-    const daysRemaining = Math.max(0, Math.ceil((trialEnd.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)))
-    const isTrialActive = now < trialEnd
 
     const bookingsThisMonth = await prisma.booking.count({
       where: {
@@ -76,19 +72,23 @@ export async function GET() {
       servicesCount,
     }
 
-    const limits = checkTrialLimits(usage)
-    const warnings = isTrialActive ? getTrialWarnings(trialEnd) : ["Trial expired. Choose a plan to continue."]
+    const warnings = planStatus.expiresAt
+      ? getTrialWarnings(planStatus.expiresAt)
+      : planStatus.plan === "FREE"
+        ? ["Trial expired. Choose a plan to continue."]
+        : []
 
     return NextResponse.json({
       type: "business",
-      isActive: isTrialActive,
-      daysRemaining,
-      daysUsed,
-      expiresAt: trialEnd,
+      isActive: planStatus.isActive,
+      daysRemaining: planStatus.daysRemaining,
+      expiresAt: planStatus.expiresAt,
       usage,
-      limits,
+      limits: {
+        allowed: true,
+        config,
+      },
       warnings,
-      config,
       pricing: PRICING_TIERS,
       business: {
         id: business.id,

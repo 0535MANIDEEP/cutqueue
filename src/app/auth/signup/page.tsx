@@ -60,7 +60,7 @@ export default function SignUpPage() {
         setError("Account created but sign-in failed. Please try signing in.")
         setLoading(false)
       } else {
-        router.push(isOwner ? "/dashboard/owner" : "/book")
+        router.push(isOwner ? "/dashboard/owner" : "/dashboard/customer")
         router.refresh()
       }
     } catch {

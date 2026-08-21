@@ -22,11 +22,21 @@ export default function QueueJoinPage() {
     setError("")
 
     try {
+      const shopsRes = await fetch("/api/shops")
+      const shops = await shopsRes.json()
+      const shop = shops.find((s: { slug: string; id: string }) => s.slug === shopSlug || s.id === shopSlug)
+
+      if (!shop) {
+        setError("Shop not found. Check the shop code and try again.")
+        setLoading(false)
+        return
+      }
+
       const res = await fetch("/api/queue/join", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          shopSlug,
+          businessId: shop.id,
           serviceType: "walk-in",
         }),
       })
@@ -36,8 +46,8 @@ export default function QueueJoinPage() {
         setError(data.error)
       } else {
         setTicket(data.ticketNumber)
-        setPosition(data.position)
-        setShopName(data.shopName || shopSlug)
+        setPosition(data.position || null)
+        setShopName(shop.name || shopSlug)
       }
     } catch {
       setError("Failed to join queue. Try again.")

@@ -39,7 +39,7 @@ export default function OwnerDashboard() {
       }
       if (bookingsRes.ok) {
         const d = await bookingsRes.json()
-        setBookings(d.bookings || [])
+        setBookings(Array.isArray(d) ? d : d.bookings || [])
       }
     } catch {
       setError("Failed to load data")
@@ -48,7 +48,10 @@ export default function OwnerDashboard() {
 
   useEffect(() => {
     fetch("/api/business/settings")
-      .then((r) => r.json())
+      .then((r) => {
+        if (!r.ok) throw new Error("Failed to load business settings")
+        return r.json()
+      })
       .then((data) => {
         if (data?.id) {
           setBusinessId(data.id)

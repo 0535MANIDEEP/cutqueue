@@ -146,7 +146,7 @@ export async function POST(req: Request) {
     logger.info("Account created", { email, userId: result.user.id, isOwner: !!shopName })
 
     return NextResponse.json(
-      { message: "Account created successfully", userId: result.user.id },
+      { message: "Account created successfully", userId: result.user.id, role: result.user.role, needsOnboarding: !!result.business },
       { status: 201 }
     )
   } catch (error) {

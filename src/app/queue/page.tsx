@@ -47,6 +47,7 @@ export default function QueuePage() {
   const [businesses, setBusinesses] = useState<{ id: string; name: string }[]>([])
   const [currentTime, setCurrentTime] = useState(new Date())
   const [mounted, setMounted] = useState(false)
+  const [error, setError] = useState("")
 
   useEffect(() => {
     setMounted(true)
@@ -104,10 +105,11 @@ export default function QueuePage() {
         fetchQueue()
       } else {
         const err = await res.json()
-        alert(err.error || 'Failed to join queue')
+        setError(err.error || "Failed to join queue")
       }
     } catch (error) {
       console.error('Failed to join queue:', error)
+      setError("Network error. Please try again.")
     } finally {
       setJoining(false)
     }
@@ -127,6 +129,25 @@ export default function QueuePage() {
     (e) => e.customer.name === session?.user?.name && ['WAITING', 'CALLED', 'IN_PROGRESS'].includes(e.status)
   )
 
+  const leaveQueue = async () => {
+    if (!myEntry) return
+    try {
+      const res = await fetch("/api/queue/leave", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ entryId: myEntry.id }),
+      })
+      if (res.ok) {
+        fetchQueue()
+      } else {
+        const err = await res.json()
+        setError(err.error || "Failed to leave queue")
+      }
+    } catch {
+      setError("Network error. Please try again.")
+    }
+  }
+
   return (
     <div className="min-h-screen bg-[#0F1B17] pt-20 pb-10 px-4">
       <div className="max-w-4xl mx-auto">
@@ -134,6 +155,13 @@ export default function QueuePage() {
           <h1 className="text-3xl md:text-4xl font-bold text-[#EFE9DA] mb-2">Live Queue</h1>
           <p className="text-[#EFE9DA]/60">Real-time queue status</p>
         </div>
+
+        {error && (
+          <div className="mb-4 p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-sm flex items-center justify-between">
+            <span>{error}</span>
+            <button onClick={() => setError("")} className="text-red-400 hover:text-red-300 font-bold">×</button>
+          </div>
+        )}
 
         {businesses.length > 0 && (
           <div className="mb-6">
@@ -260,9 +288,19 @@ export default function QueuePage() {
                   <p className="text-[#E8B547] font-medium mb-2">
                     You&apos;re in queue! Ticket #{myEntry.ticketNumber}
                   </p>
-                  <p className="text-sm text-[#EFE9DA]/50">
+                  <p className="text-sm text-[#EFE9DA]/50 mb-3">
                     Status: {statusLabels[myEntry.status]}
                   </p>
+                  {myEntry.status === "WAITING" && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={leaveQueue}
+                      className="text-red-400 border-red-400/30 hover:bg-red-400/10"
+                    >
+                      Leave Queue
+                    </Button>
+                  )}
                 </div>
               ) : (
                 <Button

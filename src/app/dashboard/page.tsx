@@ -18,7 +18,10 @@ export default function DashboardPage() {
 
       if (role === "BUSINESS_OWNER") {
         fetch("/api/business/settings")
-          .then((res) => res.json())
+          .then((res) => {
+            if (!res.ok) throw new Error("No business")
+            return res.json()
+          })
           .then((data) => {
             if (data.error) {
               router.push("/onboarding")
