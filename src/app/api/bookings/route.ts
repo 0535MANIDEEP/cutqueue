@@ -6,6 +6,7 @@ import { bookingSchema } from "@/lib/validation"
 import { logger } from "@/lib/logger"
 import { enforceBookingLimits } from "@/lib/trial-enforcement"
 import { requirePermission, Role } from "@/lib/roles"
+import { isBusinessOpen } from "@/lib/business-hours"
 
 export async function GET(req: Request) {
   try {
@@ -114,6 +115,12 @@ export async function POST(req: Request) {
     const trialCheck = await enforceBookingLimits(businessId)
     if (!trialCheck.allowed) {
       return NextResponse.json({ error: trialCheck.error }, { status: 403 })
+    }
+    const bizForHours = await prisma.business.findUnique({ where: { id: businessId }, select: { openingHours: true } })
+    const scheduledDate = new Date(scheduledAt)
+    const hoursCheck = isBusinessOpen(bizForHours?.openingHours as any, new Date(scheduledDate.toLocaleString("en-US", { timeZone: "Asia/Kolkata" })))
+    if (!hoursCheck.open) {
+      return NextResponse.json({ error: `Cannot book: ${hoursCheck.reason}`, nextOpenAt: hoursCheck.nextOpenAt }, { status: 400 })
     }
 
     const service = await prisma.service.findUnique({

@@ -6,6 +6,7 @@ import { queueJoinSchema } from "@/lib/validation"
 import { logger } from "@/lib/logger"
 import { enforceQueueLimits } from "@/lib/trial-enforcement"
 import { requirePermission, Role } from "@/lib/roles"
+import { isBusinessOpen } from "@/lib/business-hours"
 
 export async function GET(req: Request) {
   try {
@@ -46,12 +47,15 @@ export async function GET(req: Request) {
 
     const waitingCount = queue.entries.filter((e) => e.status === "WAITING").length
     const estimatedWait = waitingCount * queue.avgServiceTime
+    const businessForStatus = businessId ? await prisma.business.findUnique({ where: { id: businessId }, select: { openingHours: true } }) : null
+    const hours = isBusinessOpen(businessForStatus?.openingHours as any)
 
     return NextResponse.json({
       queue: { id: queue.id, isActive: queue.isActive },
       entries: queue.entries,
       waitingCount,
       estimatedWait,
+      hours,
     }, {
       headers: { "Cache-Control": "private, max-age=5, stale-while-revalidate=10" },
     })
@@ -109,6 +113,10 @@ export async function POST(req: Request) {
 
     if (!queue.isActive) {
       return NextResponse.json({ error: "Queue is closed" }, { status: 400 })
+    }
+    const hoursCheck = isBusinessOpen(business.openingHours as any)
+    if (!hoursCheck.open) {
+      return NextResponse.json({ error: hoursCheck.reason || "Business is closed", nextOpenAt: hoursCheck.nextOpenAt }, { status: 400 })
     }
 
     // ATOMIC: Use transaction to prevent ticket number collisions under concurrency

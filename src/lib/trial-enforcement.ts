@@ -1,5 +1,3 @@
-"use server"
-
 import { prisma } from "./prisma"
 import { TRIAL_DAYS } from "./plans"
 import { logger } from "./logger"
@@ -163,6 +161,7 @@ export async function getBusinessPlanStatus(businessId: string) {
  * @returns Array of warning messages
  */
 export function getTrialWarnings(expiresAt: Date): string[] {
+  // Removed "use server" - this is a pure utility function, not a Server Action
   const warnings: string[] = []
   const now = new Date()
   const daysRemaining = Math.ceil((expiresAt.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))

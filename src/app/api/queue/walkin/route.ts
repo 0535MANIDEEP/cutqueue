@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { logger } from "@/lib/logger"
+import { isBusinessOpen } from "@/lib/business-hours"
 
 export async function POST(req: Request) {
   try {
@@ -44,6 +45,10 @@ export async function POST(req: Request) {
 
     if (!queue.isActive) {
       return NextResponse.json({ error: "Queue is closed" }, { status: 400 })
+    }
+    const hoursCheck = isBusinessOpen((business as any).openingHours)
+    if (!hoursCheck.open) {
+      return NextResponse.json({ error: hoursCheck.reason || "Business is closed", nextOpenAt: hoursCheck.nextOpenAt }, { status: 400 })
     }
 
     // ATOMIC: Use a transaction with row locking to prevent ticket number collisions
