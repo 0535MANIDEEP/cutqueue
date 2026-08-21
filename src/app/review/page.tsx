@@ -19,8 +19,11 @@ export default function ReviewPage() {
 
   useEffect(() => {
     if (businessId) {
-      fetch(`/api/shops?slug=x`)
-        .then(() => fetch(`/api/analytics`))
+      fetch(`/api/shops?slug=${businessId}`)
+        .then((r) => r.json())
+        .then((d) => {
+          if (d.business) setBusinessName(d.business.name)
+        })
         .catch(() => {})
     }
   }, [businessId])

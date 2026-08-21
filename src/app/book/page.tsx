@@ -28,6 +28,7 @@ export default function BookPage() {
   const [step, setStep] = useState(1)
   const [loading, setLoading] = useState(false)
   const [booked, setBooked] = useState(false)
+  const [bookError, setBookError] = useState("")
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search)
@@ -51,6 +52,7 @@ export default function BookPage() {
   const handleBook = async () => {
     if (!selectedService || !selectedDate || !selectedTime || !customerName || !customerPhone) return
     setLoading(true)
+    setBookError("")
     try {
       const res = await fetch("/api/bookings", {
         method: "POST",
@@ -58,14 +60,21 @@ export default function BookPage() {
         body: JSON.stringify({
           businessId: shop.id,
           serviceId: selectedService,
-          staffId: selectedStaff,
+          staffId: selectedStaff || undefined,
           scheduledAt: new Date(`${selectedDate}T${selectedTime}:00`).toISOString(),
           customerName,
           customerPhone,
         }),
       })
-      if (res.ok) setBooked(true)
-    } catch {}
+      if (res.ok) {
+        setBooked(true)
+      } else {
+        const data = await res.json()
+        setBookError(data.error || "Booking failed. Please try again.")
+      }
+    } catch {
+      setBookError("Network error. Please try again.")
+    }
     setLoading(false)
   }
 
@@ -209,7 +218,7 @@ export default function BookPage() {
 
               {staff.length > 0 && (
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Preferred staff (optional)</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Preferred staff</label>
                   <div className="grid grid-cols-2 gap-2">
                     {staff.map(s => (
                       <button
@@ -232,7 +241,7 @@ export default function BookPage() {
               className="w-full mt-4"
               size="lg"
               onClick={() => setStep(4)}
-              disabled={!customerName || !customerPhone}
+              disabled={!customerName || !customerPhone || !selectedStaff}
             >
               Continue
             </Button>
@@ -292,6 +301,12 @@ export default function BookPage() {
                 Confirm Booking
               </Button>
             </div>
+
+            {bookError && (
+              <div className="mt-3 p-3 rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm text-center">
+                {bookError}
+              </div>
+            )}
           </div>
         )}
 

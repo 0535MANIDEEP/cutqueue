@@ -155,7 +155,7 @@ export async function POST(req: Request) {
       })
     })
 
-    await notifyBookingCreated(booking)
+    await notifyBookingCreated(booking as { id: string; customerId: string; businessId: string; scheduledAt: Date; service: { name: string }; business: { name: string } })
     await triggerN8NWebhook("booking.created", { bookingId: booking.id, businessId })
 
     return NextResponse.json(booking, { status: 201 })

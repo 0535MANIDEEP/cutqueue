@@ -39,18 +39,19 @@ export async function GET(request: Request) {
       })
       if (existingReview) continue
 
-      // Check if review request already sent
+      // Check if review request already sent for this specific business
       const existingNotification = await prisma.notification.findFirst({
         where: {
           userId: booking.customerId,
           type: "SYSTEM",
           title: "How was your experience?",
+          data: { path: ["businessId"], equals: booking.businessId },
         },
       })
       if (existingNotification) continue
 
       const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://cutqueue-amber.vercel.app"
-      const reviewUrl = `${appUrl}/review?business=${booking.businessId}`
+      const reviewUrl = `${appUrl}/review?business=${booking.businessId}&booking=${booking.id}`
 
       // In-app notification
       await createNotification({

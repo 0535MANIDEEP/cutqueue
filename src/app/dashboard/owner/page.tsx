@@ -123,7 +123,8 @@ export default function OwnerDashboard() {
 
   const waiting = queue.filter(e => e.status === "WAITING")
   const serving = queue.filter(e => e.status === "SERVING" || e.status === "CALLED" || e.status === "IN_PROGRESS")
-  const todayBookings = bookings.filter(b => b.scheduledAt.startsWith(new Date().toISOString().split("T")[0]))
+  const todayStr = new Date().toLocaleDateString("en-CA")
+  const todayBookings = bookings.filter(b => new Date(b.scheduledAt).toLocaleDateString("en-CA") === todayStr)
 
   return (
     <div className="min-h-screen bg-gray-50">

@@ -30,7 +30,19 @@ export default function SignInPage() {
       setError("Invalid email or password")
       setLoading(false)
     } else {
-      router.push("/dashboard/owner")
+      const res = await fetch("/api/auth/session")
+      const session = await res.json()
+      const role = session?.user?.role
+
+      if (role === "ADMIN") {
+        router.push("/admin")
+      } else if (role === "BUSINESS_OWNER") {
+        router.push("/dashboard/owner")
+      } else if (role === "STAFF") {
+        router.push("/dashboard/owner")
+      } else {
+        router.push("/dashboard/customer")
+      }
       router.refresh()
     }
   }

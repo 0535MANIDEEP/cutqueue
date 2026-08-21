@@ -27,6 +27,7 @@ export async function GET(req: Request) {
             status: true,
             serviceType: true,
             joinedAt: true,
+            customerId: true,
             customer: { select: { name: true } },
           },
           orderBy: { ticketNumber: "asc" },

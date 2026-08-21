@@ -45,7 +45,9 @@ export async function POST(request: Request) {
         userId: business.ownerId,
         type: "SYSTEM",
         title: "Plan Activated",
-        message: `Your ${plan} plan has been activated! Expires on ${expiresAt.toLocaleDateString("en-IN")}`,
+        message: plan === "FREE"
+          ? "Your plan has been reset to Free."
+          : `Your ${plan} plan has been activated! Expires on ${expiresAt!.toLocaleDateString("en-IN")}`,
         data: { businessId: business.id, plan },
       },
     })

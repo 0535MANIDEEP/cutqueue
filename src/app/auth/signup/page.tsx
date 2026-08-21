@@ -191,6 +191,20 @@ export default function SignUpPage() {
                 <p className="mt-1 text-xs text-[#EFE9DA]/40">At least 8 characters</p>
               </div>
 
+              <div>
+                <label className="block text-sm font-medium text-[#EFE9DA] mb-2">
+                  Phone Number
+                </label>
+                <Input
+                  type="tel"
+                  placeholder="+91 98765 43210"
+                  value={formData.phone}
+                  onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                  aria-label="Phone number"
+                />
+                <p className="mt-1 text-xs text-[#EFE9DA]/40">For SMS notifications (optional)</p>
+              </div>
+
               <Button
                 type="submit"
                 variant="primary"

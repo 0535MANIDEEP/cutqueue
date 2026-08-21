@@ -111,6 +111,14 @@ export async function POST(req: Request) {
           },
         })
 
+        const ownerStaff = await tx.staff.create({
+          data: {
+            userId: user.id,
+            businessId: business.id,
+            bio: `${shopName} owner`,
+          },
+        })
+
         if (templateData.defaultServices?.length) {
           await tx.service.createMany({
             data: templateData.defaultServices.map((s) => ({

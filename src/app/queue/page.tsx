@@ -9,6 +9,7 @@ import { cn } from '@/lib/utils'
 interface QueueEntry {
   id: string
   ticketNumber: number
+  customerId: string
   customer: { name: string }
   serviceType?: string
   status: 'WAITING' | 'CALLED' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED'
@@ -126,7 +127,7 @@ export default function QueuePage() {
   }
 
   const myEntry = queueData?.entries.find(
-    (e) => e.customer.name === session?.user?.name && ['WAITING', 'CALLED', 'IN_PROGRESS'].includes(e.status)
+    (e) => e.customerId === session?.user?.id && ['WAITING', 'CALLED', 'IN_PROGRESS'].includes(e.status)
   )
 
   const leaveQueue = async () => {
