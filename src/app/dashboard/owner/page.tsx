@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react"
 import { Header } from "@/components/layout/header"
+import { TRIAL_DAYS } from "@/lib/plans"
 
 interface QueueEntry {
   id: string
@@ -64,6 +65,9 @@ export default function OwnerDashboard() {
     }
   }, [])
 
+  const [trialDaysRemaining, setTrialDaysRemaining] = useState<number | null>(null)
+  const [showUpgrade, setShowUpgrade] = useState(false)
+
   useEffect(() => {
     fetch("/api/business/settings")
       .then((r) => {
@@ -73,13 +77,35 @@ export default function OwnerDashboard() {
       .then((data) => {
         if (data?.id) {
           setBusinessId(data.id)
-          fetchData(data.id)
+          // Calculate trial days remaining (90-day trial for FREE plan)
+          const now = new Date()
+          const createdAt = new Date(data.createdAt)
+          const plan = data.plan || "FREE"
+          
+          if (plan === "FREE") {
+            let expiryAt = data.planExpiresAt ? new Date(data.planExpiresAt) : createdAt
+            expiryAt.setDate(expiryAt.getDate() + TRIAL_DAYS)
+            const diffMs = expiryAt.getTime() - now.getTime()
+            setTrialDaysRemaining(Math.max(0, Math.ceil(diffMs / (1000 * 60 * 60 * 24))))
+          } else {
+            setTrialDaysRemaining(null)
+          }
+          
+          // Show upgrade prompt when trial ends in 15 days or less
+          if (plan === "FREE" && trialDaysRemaining !== null && trialDaysRemaining <= 15) {
+            setShowUpgrade(true)
+          }
         }
       })
       .catch(() => setError("Failed to load business settings"))
-  }, [fetchData])
+  }, [])
 
   useEffect(() => {
+    if (!businessId) return
+    const interval = setInterval(() => fetchData(businessId), 5000)
+    return () => clearInterval(interval)
+  }, [businessId, fetchData])
+useEffect(() => {
     if (!businessId) return
     const interval = setInterval(() => fetchData(businessId), 5000)
     return () => clearInterval(interval)
@@ -219,6 +245,36 @@ export default function OwnerDashboard() {
           <div className="mb-4 p-3 rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm flex items-center justify-between">
             <span>{error}</span>
             <button onClick={() => setError("")} className="text-red-500 hover:text-red-700 font-bold">×</button>
+          </div>
+        )}
+
+        {showUpgrade && (
+          <div className="mb-6 p-6 bg-[#141C18] rounded-2xl border border-[#263329] animate-fade-in">
+            <div className="flex items-start gap-4">
+              <div className="w-12 h-12 rounded-lg bg-[#E8B547] flex items-center justify-center text-[#0A0F0D] text-sm font-bold mb-2">
+                {trialDaysRemaining !== null ? `0${trialDaysRemaining}` : "Ending Soon"}
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold text-[#EFE9DA] mb-1">Trial Ending Soon</h3>
+                <p className="text-[#EFE9DA]/60 mb-4">Your 90-day free trial ends in {trialDaysRemaining} days. Upgrade to Professional to continue managing your queue.</p>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setShowUpgrade(false)}
+                    className="flex-1 py-2 rounded-lg text-sm font-medium border border-gray-200 text-gray-600 hover:border-gray-300"
+                  >
+                    Maybe Later
+                  </button>
+                  <a
+                    href="https://cutqueue-amber.vercel.app/api/auth/signup"
+                    target="_blank"
+                    rel="noopener"
+                    className="flex-1 py-2 rounded-lg text-sm font-semibold bg-blue-600 text-white hover:bg-blue-700 transition"
+                  >
+                    Create New Account
+                  </a>
+                </div>
+              </div>
+            </div>
           </div>
         )}
 
