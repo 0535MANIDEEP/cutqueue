@@ -34,6 +34,11 @@ export default function OwnerDashboard() {
   const [walkInPhone, setWalkInPhone] = useState("")
   const [walkInService, setWalkInService] = useState("")
   const [addingWalkIn, setAddingWalkIn] = useState(false)
+  const [invoiceGenerating, setInvoiceGenerating] = useState<string | null>(null)
+  const [generatedInvoice, setGeneratedInvoice] = useState<Record<string, unknown> | null>(null)
+  const [invoiceAmount, setInvoiceAmount] = useState("")
+  const [invoiceEntryId, setInvoiceEntryId] = useState<string | null>(null)
+  const [invoiceServiceName, setInvoiceServiceName] = useState("")
 
   const fetchData = useCallback(async (bid: string) => {
     try {
@@ -165,6 +170,42 @@ export default function OwnerDashboard() {
     }
   }
 
+  const generateInvoice = async (entryId: string, serviceName: string) => {
+    if (!businessId) return
+    setInvoiceEntryId(entryId)
+    setInvoiceServiceName(serviceName)
+    setInvoiceAmount("")
+  }
+
+  const submitInvoice = async () => {
+    if (!businessId || !invoiceEntryId || !invoiceAmount) return
+    setInvoiceGenerating(invoiceEntryId)
+    try {
+      const res = await fetch("/api/invoices", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          businessId,
+          queueEntryId: invoiceEntryId,
+          serviceName: invoiceServiceName,
+          amount: Number(invoiceAmount),
+        }),
+      })
+      if (!res.ok) {
+        const err = await res.json()
+        setError(err.error || "Failed to generate invoice")
+        return
+      }
+      const invoice = await res.json()
+      setGeneratedInvoice(invoice)
+      setInvoiceEntryId(null)
+    } catch {
+      setError("Network error")
+    } finally {
+      setInvoiceGenerating(null)
+    }
+  }
+
   const waiting = queue.filter(e => e.status === "WAITING")
   const serving = queue.filter(e => e.status === "CALLED" || e.status === "IN_PROGRESS")
   const todayStr = new Date().toLocaleDateString("en-CA")
@@ -281,12 +322,21 @@ export default function OwnerDashboard() {
                         <p className="font-semibold text-gray-900">{entry.customer?.name}</p>
                         <p className="text-sm text-gray-600">{entry.serviceType}</p>
                       </div>
-                      <button
-                        onClick={() => completeService(entry.id)}
-                        className="bg-emerald-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-emerald-700"
-                      >
-                        Done
-                      </button>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => generateInvoice(entry.id, entry.serviceType)}
+                          disabled={invoiceGenerating === entry.id}
+                          className="bg-gray-200 text-gray-700 px-3 py-2 rounded-lg text-sm font-medium hover:bg-gray-300 disabled:opacity-50"
+                        >
+                          {invoiceGenerating === entry.id ? "..." : "Invoice"}
+                        </button>
+                        <button
+                          onClick={() => completeService(entry.id)}
+                          className="bg-emerald-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-emerald-700"
+                        >
+                          Done
+                        </button>
+                      </div>
                     </div>
                   </div>
                 ))}
@@ -357,6 +407,95 @@ export default function OwnerDashboard() {
           </div>
         )}
       </div>
+
+      {invoiceEntryId && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-2xl p-6 max-w-sm w-full">
+            <h3 className="font-semibold text-gray-900 mb-4">Generate Invoice</h3>
+            <p className="text-sm text-gray-500 mb-3">{invoiceServiceName}</p>
+            <div className="mb-4">
+              <label className="text-sm text-gray-500">Amount (₹)</label>
+              <input
+                type="number"
+                value={invoiceAmount}
+                onChange={(e) => setInvoiceAmount(e.target.value)}
+                placeholder="0.00"
+                className="w-full mt-1 px-3 py-2 border border-gray-200 rounded-lg text-lg font-semibold"
+                autoFocus
+                min="0"
+                step="0.01"
+              />
+              {invoiceAmount && (
+                <div className="mt-2 text-sm text-gray-500">
+                  <p>Subtotal: ₹{Number(invoiceAmount).toFixed(2)}</p>
+                  <p>CGST (2.5%): ₹{(Number(invoiceAmount) * 0.025).toFixed(2)}</p>
+                  <p>SGST (2.5%): ₹{(Number(invoiceAmount) * 0.025).toFixed(2)}</p>
+                  <p className="font-semibold text-gray-900">Total: ₹{(Number(invoiceAmount) * 1.05).toFixed(2)}</p>
+                </div>
+              )}
+            </div>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setInvoiceEntryId(null)}
+                className="flex-1 py-2 rounded-lg text-sm font-medium border border-gray-200 text-gray-600"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={submitInvoice}
+                disabled={!invoiceAmount || invoiceGenerating !== null}
+                className="flex-1 py-2 rounded-lg text-sm font-semibold bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50"
+              >
+                {invoiceGenerating ? "Generating..." : "Generate"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {generatedInvoice && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-2xl p-6 max-w-md w-full">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="font-semibold text-gray-900">GST Invoice</h3>
+              <button onClick={() => setGeneratedInvoice(null)} className="text-gray-400 hover:text-gray-600">×</button>
+            </div>
+            <div className="space-y-3 text-sm">
+              <div className="flex justify-between">
+                <span className="text-gray-500">Invoice #</span>
+                <span className="font-mono">{generatedInvoice.invoiceNumber as string}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-500">Business</span>
+                <span>{(generatedInvoice.business as Record<string, unknown>)?.name as string}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-500">Date</span>
+                <span>{new Date(generatedInvoice.date as string).toLocaleDateString("en-IN")}</span>
+              </div>
+              <hr />
+              <div className="flex justify-between">
+                <span className="text-gray-500">Subtotal</span>
+                <span>₹{(generatedInvoice.subtotal as number).toFixed(2)}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-500">CGST (2.5%)</span>
+                <span>₹{(generatedInvoice.gst as Record<string, number>)?.cgst?.toFixed(2)}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-500">SGST (2.5%)</span>
+                <span>₹{(generatedInvoice.gst as Record<string, number>)?.sgst?.toFixed(2)}</span>
+              </div>
+              <hr />
+              <div className="flex justify-between font-semibold text-base">
+                <span>Total</span>
+                <span>₹{(generatedInvoice.total as number).toFixed(2)}</span>
+              </div>
+            </div>
+            <p className="text-xs text-gray-400 mt-4 text-center">Enter amount manually in the item list</p>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
