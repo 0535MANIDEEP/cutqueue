@@ -15,9 +15,9 @@ export const templates: IndustryTemplate[] = [
     name: "Barbershop",
     description: "Classic barbershop queue and booking management",
     category: "beauty",
-    icon: "✂️",
+    icon: "BBS",
     queueType: "ticket",
-    features: ["queue", "booking", "portfolio", "analytics", "sms"],
+    features: ["queue", "booking", "analytics", "sms"],
     defaultServices: [
       { name: "Haircut", duration: 30, price: 25, category: "haircut" },
       { name: "Beard Trim", duration: 15, price: 15, category: "beard" },
@@ -30,9 +30,9 @@ export const templates: IndustryTemplate[] = [
     name: "Hair Salon",
     description: "Full-service hair salon with stylist booking",
     category: "beauty",
-    icon: "💇",
+    icon: "HS",
     queueType: "appointment",
-    features: ["booking", "portfolio", "analytics", "sms", "stylist_profiles"],
+    features: ["booking", "analytics", "sms", "stylist_profiles"],
     defaultServices: [
       { name: "Women's Haircut", duration: 45, price: 45, category: "cut" },
       { name: "Men's Haircut", duration: 30, price: 30, category: "cut" },
@@ -46,9 +46,9 @@ export const templates: IndustryTemplate[] = [
     name: "Nail Studio",
     description: "Nail salon with chair-based booking",
     category: "beauty",
-    icon: "💅",
+    icon: "NS",
     queueType: "slot",
-    features: ["booking", "portfolio", "analytics", "sms"],
+    features: ["booking", "analytics", "sms"],
     defaultServices: [
       { name: "Manicure", duration: 30, price: 25, category: "nails" },
       { name: "Pedicure", duration: 45, price: 35, category: "nails" },
@@ -61,9 +61,9 @@ export const templates: IndustryTemplate[] = [
     name: "Tattoo Studio",
     description: "Tattoo artist queue and portfolio showcase",
     category: "beauty",
-    icon: "🖋️",
+    icon: "TS",
     queueType: "appointment",
-    features: ["booking", "portfolio", "analytics", "sms", "artist_profiles"],
+    features: ["booking", "analytics", "sms", "artist_profiles"],
     defaultServices: [
       { name: "Small Tattoo", duration: 60, price: 100, category: "tattoo" },
       { name: "Medium Tattoo", duration: 120, price: 200, category: "tattoo" },
@@ -76,7 +76,7 @@ export const templates: IndustryTemplate[] = [
     name: "Dental Clinic",
     description: "Patient queue management for dental offices",
     category: "healthcare",
-    icon: "🦷",
+    icon: "DC",
     queueType: "number",
     features: ["queue", "booking", "analytics", "sms", "patient_records"],
     defaultServices: [
@@ -91,7 +91,7 @@ export const templates: IndustryTemplate[] = [
     name: "Medical Clinic",
     description: "General practice patient queue management",
     category: "healthcare",
-    icon: "🏥",
+    icon: "MC",
     queueType: "number",
     features: ["queue", "booking", "analytics", "sms", "patient_records"],
     defaultServices: [
@@ -106,7 +106,7 @@ export const templates: IndustryTemplate[] = [
     name: "Auto Repair Shop",
     description: "Vehicle service queue with status updates",
     category: "automotive",
-    icon: "🔧",
+    icon: "AR",
     queueType: "ticket",
     features: ["queue", "booking", "analytics", "sms", "status_updates"],
     defaultServices: [
@@ -121,7 +121,7 @@ export const templates: IndustryTemplate[] = [
     name: "Fitness Center",
     description: "Class booking and equipment queue",
     category: "fitness",
-    icon: "💪",
+    icon: "FC",
     queueType: "slot",
     features: ["booking", "analytics", "sms", "class_schedule"],
     defaultServices: [
@@ -136,7 +136,7 @@ export const templates: IndustryTemplate[] = [
     name: "Government Office",
     description: "Citizen queue management for government services",
     category: "government",
-    icon: "🏛️",
+    icon: "GO",
     queueType: "number",
     features: ["queue", "analytics", "sms", "document_tracking"],
     defaultServices: [
@@ -151,7 +151,7 @@ export const templates: IndustryTemplate[] = [
     name: "Bank Branch",
     description: "Customer queue management for banking services",
     category: "finance",
-    icon: "🏦",
+    icon: "BB",
     queueType: "number",
     features: ["queue", "analytics", "sms", "service_desk"],
     defaultServices: [
@@ -166,7 +166,7 @@ export const templates: IndustryTemplate[] = [
     name: "Veterinary Clinic",
     description: "Pet queue management with owner notifications",
     category: "healthcare",
-    icon: "🐾",
+    icon: "VC",
     queueType: "number",
     features: ["queue", "booking", "analytics", "sms", "pet_profiles"],
     defaultServices: [
@@ -181,9 +181,9 @@ export const templates: IndustryTemplate[] = [
     name: "Photography Studio",
     description: "Session booking and portfolio showcase",
     category: "creative",
-    icon: "📸",
+    icon: "PS",
     queueType: "appointment",
-    features: ["booking", "portfolio", "analytics", "sms", "gallery"],
+    features: ["booking", "analytics", "sms", "gallery"],
     defaultServices: [
       { name: "Portrait Session", duration: 60, price: 150, category: "portrait" },
       { name: "Family Session", duration: 90, price: 200, category: "family" },

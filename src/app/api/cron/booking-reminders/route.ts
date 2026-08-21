@@ -72,7 +72,7 @@ export async function GET(request: Request) {
       if (booking.customer.phone) {
         await sendSMS(
           booking.customer.phone,
-          `⏰ Reminder: Your ${booking.service.name} at ${booking.business.name} is at ${timeStr} (1 hour). See you soon!`,
+          `Reminder: Your ${booking.service.name} at ${booking.business.name} is at ${timeStr} (1 hour). See you soon!`,
           booking.business.id
         )
       }
@@ -126,7 +126,7 @@ export async function GET(request: Request) {
       if (booking.customer.phone) {
         await sendSMS(
           booking.customer.phone,
-          `📅 Reminder: Your ${booking.service.name} at ${booking.business.name} is tomorrow (${dateStr}) at ${timeStr}.`,
+          `Reminder: Your ${booking.service.name} at ${booking.business.name} is tomorrow (${dateStr}) at ${timeStr}.`,
           booking.business.id
         )
       }

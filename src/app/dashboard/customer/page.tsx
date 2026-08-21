@@ -49,11 +49,11 @@ export default function CustomerDashboard() {
         {/* Quick Actions */}
         <div className="grid grid-cols-2 gap-3 mb-8">
           <Link href="/book" className="bg-blue-600 text-white rounded-xl p-4 text-center hover:bg-blue-700 transition">
-            <p className="text-2xl mb-1">📅</p>
+            <svg className="w-8 h-8 mx-auto mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" /></svg>
             <p className="text-sm font-medium">Book Now</p>
           </Link>
           <Link href="/queue/join" className="bg-emerald-600 text-white rounded-xl p-4 text-center hover:bg-emerald-700 transition">
-            <p className="text-2xl mb-1">⏳</p>
+            <svg className="w-8 h-8 mx-auto mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
             <p className="text-sm font-medium">Join Queue</p>
           </Link>
         </div>

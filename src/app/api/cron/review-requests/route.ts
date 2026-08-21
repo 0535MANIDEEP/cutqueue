@@ -65,7 +65,7 @@ export async function GET(request: Request) {
       if (booking.customer.phone) {
         await sendSMS(
           booking.customer.phone,
-          `⭐ How was your ${booking.service.name} at ${booking.business.name}? Rate us: ${reviewUrl}`,
+          `How was your ${booking.service.name} at ${booking.business.name}? Rate us: ${reviewUrl}`,
           booking.business.id
         )
       }

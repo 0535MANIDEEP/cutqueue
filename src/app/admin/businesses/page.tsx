@@ -141,7 +141,7 @@ export default function AdminBusinessesPage() {
                   <tr key={biz.id} className="border-b border-[#263329]/50 hover:bg-[#141C18]">
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-3">
-                        <span className="text-xl">{biz.template?.icon || "📋"}</span>
+                        <span className="text-xs font-mono bg-[#E8B547]/10 text-[#E8B547] w-8 h-8 rounded-lg flex items-center justify-center">{biz.template?.icon || "--"}</span>
                         <div>
                           <div className="text-sm font-medium text-[#EFE9DA]">{biz.name}</div>
                           <div className="text-xs text-[#EFE9DA]/50">{biz.template?.name || "Unknown"}</div>

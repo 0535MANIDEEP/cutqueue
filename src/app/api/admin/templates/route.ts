@@ -40,7 +40,7 @@ export async function POST(req: Request) {
         name,
         description: description || "",
         category,
-        icon: icon || "📋",
+        icon: icon || "--",
         queueType: queueType || "ticket",
         features: features || [],
         defaultServices: defaultServices || [],
