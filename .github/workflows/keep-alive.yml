@@ -1,14 +1,62 @@
-name: Keep Supabase Alive
+name: Cron Jobs
 on:
   schedule:
-    - cron: '0 0 */3 * *'
+    - cron: '0 */6 * * *'
+    - cron: '30 * * * *'
+    - cron: '0 0 * * *'
+    - cron: '0 8 * * *'
+    - cron: '0 10 * * *'
   workflow_dispatch:
 
 jobs:
-  ping:
+  keep-alive:
     runs-on: ubuntu-latest
     steps:
       - name: Ping Supabase
+        run: curl -sf "${{ secrets.SUPABASE_URL }}/rest/v1/" > /dev/null 2>&1 || echo "Ping done"
+      - name: Ping App Health
+        run: curl -sf "https://cutqueue-amber.vercel.app/api/health" > /dev/null 2>&1 || echo "Health done"
+
+  no-shows:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Detect No-Shows
         run: |
-          curl -sf "${{ secrets.SUPABASE_URL }}/rest/v1/" > /dev/null 2>&1 || echo "Ping completed"
-          echo "Supabase keep-alive ping sent at $(date)"
+          curl -sf "https://cutqueue-amber.vercel.app/api/cron/no-shows" \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}"
+
+  booking-reminders:
+    runs-on: ubuntu-latest
+    if: github.event.schedule == '0 8 * * *' || github.event_name == 'workflow_dispatch'
+    steps:
+      - name: Send Booking Reminders
+        run: |
+          curl -sf "https://cutqueue-amber.vercel.app/api/cron/booking-reminders" \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}"
+
+  review-requests:
+    runs-on: ubuntu-latest
+    if: github.event.schedule == '0 10 * * *' || github.event_name == 'workflow_dispatch'
+    steps:
+      - name: Send Review Requests
+        run: |
+          curl -sf "https://cutqueue-amber.vercel.app/api/cron/review-requests" \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}"
+
+  trial-expiration:
+    runs-on: ubuntu-latest
+    if: github.event.schedule == '0 0 * * *' || github.event_name == 'workflow_dispatch'
+    steps:
+      - name: Check Trial Expirations
+        run: |
+          curl -sf "https://cutqueue-amber.vercel.app/api/cron/trial-expiration" \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}"
+
+  queue-cleanup:
+    runs-on: ubuntu-latest
+    if: github.event.schedule == '0 0 * * *' || github.event_name == 'workflow_dispatch'
+    steps:
+      - name: Cleanup Old Queue Entries
+        run: |
+          curl -sf "https://cutqueue-amber.vercel.app/api/cron/queue-cleanup" \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}"

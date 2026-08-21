@@ -3,12 +3,6 @@
   "devCommand": "next dev",
   "installCommand": "npm install",
   "framework": "nextjs",
-  "crons": [
-    {
-      "path": "/api/cron/no-shows",
-      "schedule": "30 * * * *"
-    }
-  ],
   "headers": [
     {
       "source": "/(.*)",
