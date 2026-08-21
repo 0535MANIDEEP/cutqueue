@@ -92,3 +92,6 @@ export function noShowTemplate(p: { shopName: string; ticket: number }) {
 export function bookForSomeoneProxyTemplate(p: { shopName: string; otherName: string; serviceName: string; date: string; time: string }) {
   return `👥 *${p.shopName}* — Proxy booking done\n\nBooked *${p.serviceName}* for *${p.otherName}* on *${p.date} ${p.time}*.\n\nShare this with them:\n${bookUrlFor(p.shopName)}`
 }
+export function monthlyRemainderTemplate(p: { shopName: string; customerName: string; serviceName?: string; shopSlug: string }) {
+  return `💈 *${p.shopName}* — Monthly remainder\n\nHi ${p.customerName}! Your ${p.serviceName || "haircut"} is due this month. Last visit was ~30 days ago.\n\nBook your next slot (2 taps):\n${bookUrlFor(p.shopSlug)}\n\nReply:\n1️⃣ Book tomorrow 10am\n2️⃣ Need different time`
+}

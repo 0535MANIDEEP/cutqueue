@@ -2,7 +2,20 @@
 import { useState, useEffect, useCallback } from "react"
 import { Header } from "@/components/layout/header"
 import { TRIAL_DAYS } from "@/lib/plans"
-import { callNextTemplate, joinTemplate, getWaUrlForTemplate, isPremium, delayTemplate, queuePausedTemplate, bookingCancelledByBusinessTemplate, serviceDoneTemplate, bookForSomeoneProxyTemplate } from "@/lib/whatsapp-templates"
+import { callNextTemplate, joinTemplate, getWaUrlForTemplate, isPremium, delayTemplate, queuePausedTemplate, bookingCancelledByBusinessTemplate, serviceDoneTemplate, bookForSomeoneProxyTemplate, monthlyRemainderTemplate } from "@/lib/whatsapp-templates"
+function MonthlyRemainder({ businessId }: { businessId: string | null }) {
+  const [name, setName] = useState("")
+  const [phone, setPhone] = useState("")
+  const [service, setService] = useState("Haircut")
+  return (
+    <div className="flex flex-col sm:flex-row gap-2">
+      <input value={name} onChange={e=>setName(e.target.value)} placeholder="Customer name" className="flex-1 bg-[#0A0F0D] border border-[#263329] rounded-xl px-3 py-2 text-sm text-[#EFE9DA] placeholder:text-[#EFE9DA]/30" />
+      <input value={phone} onChange={e=>setPhone(e.target.value)} placeholder="98765 43210" className="flex-1 bg-[#0A0F0D] border border-[#263329] rounded-xl px-3 py-2 text-sm text-[#EFE9DA] placeholder:text-[#EFE9DA]/30" />
+      <input value={service} onChange={e=>setService(e.target.value)} placeholder="Service" className="w-[110px] bg-[#0A0F0D] border border-[#263329] rounded-xl px-3 py-2 text-sm text-[#EFE9DA]" />
+      <button onClick={() => { if(!name||!phone) return; const msg = monthlyRemainderTemplate({ shopName: "Your shop", customerName: name, serviceName: service, shopSlug: businessId || "demo" }); window.open(getWaUrlForTemplate(msg, phone), "_blank") }} className="px-4 py-2 rounded-full bg-emerald-500 text-white font-bold text-sm">Send WA</button>
+    </div>
+  )
+}
 interface QueueEntry { id: string; ticketNumber: number; status: string; serviceType: string; joinedAt: string; customerId: string; customer: { name: string }; position: number | null }
 interface Booking { id: string; scheduledAt: string; status: string; customer: { name: string }; service: { name: string } }
 export default function OwnerDashboard() {
@@ -125,6 +138,13 @@ export default function OwnerDashboard() {
         <div className="flex bg-[#141C18] border border-[#263329] rounded-full p-1 mb-5 w-fit">
           <button onClick={() => setTab("queue")} className={`px-5 py-2 rounded-full text-sm font-semibold transition ${tab === "queue" ? "bg-[#EFE9DA] text-[#0A0F0D]" : "text-[#EFE9DA]/60 hover:text-[#EFE9DA]"}`}>Queue ({waiting.length + serving.length})</button>
           <button onClick={() => setTab("bookings")} className={`px-5 py-2 rounded-full text-sm font-semibold transition ${tab === "bookings" ? "bg-[#EFE9DA] text-[#0A0F0D]" : "text-[#EFE9DA]/60 hover:text-[#EFE9DA]"}`}>Bookings ({todayBookings.length})</button>
+        </div>
+        {/* Monthly remainder — free via WhatsApp wa.me (₹0) */}
+        <div className="mb-5 rounded-2xl bg-[#111815] border border-[#263329] p-4">
+          <div className="flex items-center justify-between mb-3"><h3 className="text-sm font-bold text-[#EFE9DA]">Monthly remainder — free</h3><span className="text-xs px-2 py-1 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/20">₹0 cost</span></div>
+          <p className="text-xs text-[#EFE9DA]/50 mb-3">Send “haircut due” WhatsApp to any past customer. No SMS gateway, just prefilled `wa.me` — you tap Send.</p>
+          <MonthlyRemainder businessId={businessId} />
+          <p className="text-xs text-[#EFE9DA]/30 mt-2">Free now (manual tap). Pro: auto-send monthly to all customers.</p>
         </div>
         {tab === "queue" && (
           <div className="space-y-3">
