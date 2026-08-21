@@ -56,6 +56,7 @@ export async function POST(req: Request) {
         email: session.user.email || "",
         address: "",
         city: "",
+        country: "IN",
         openingHours: {},
         settings: {},
       },

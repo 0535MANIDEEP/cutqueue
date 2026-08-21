@@ -99,6 +99,7 @@ export async function POST(req: Request) {
             email,
             address: "",
             city: "",
+            country: "IN",
             openingHours: {},
             settings: {},
           },
@@ -159,8 +160,9 @@ export async function POST(req: Request) {
     )
   } catch (error) {
     logger.error("Signup error", {}, error as Error)
+    const msg = error instanceof Error ? error.message : "Unknown error"
     return NextResponse.json(
-      { error: "Failed to create account" },
+      { error: "Failed to create account", detail: msg },
       { status: 500 }
     )
   }
