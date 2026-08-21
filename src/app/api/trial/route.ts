@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
-import { getTrialConfig, getTrialWarnings, PRICING_TIERS, getBusinessPlanStatus } from "@/lib/trial"
+import { getTrialConfig, getTrialWarnings, getBusinessPlanStatus } from "@/lib/trial"
+import { PRICING_TIERS } from "@/lib/plans"
 
 export async function GET() {
   try {

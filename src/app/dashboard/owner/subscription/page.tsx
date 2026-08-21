@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import { Header } from "@/components/layout/header"
 import { Button } from "@/components/ui/button"
-import { PRICING_TIERS } from "@/lib/trial"
+import { PRICING_TIERS } from "@/lib/plans"
 
 interface BusinessPlan {
   plan: string
