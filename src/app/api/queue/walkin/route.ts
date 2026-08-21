@@ -2,7 +2,7 @@ import { NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { logger } from "@/lib/logger"
-import { isBusinessOpen } from "@/lib/business-hours"
+import { isBusinessOpen, startOfTodayIST } from "@/lib/business-hours"
 
 export async function POST(req: Request) {
   try {
@@ -65,12 +65,12 @@ export async function POST(req: Request) {
 
       // Use a counter table approach: find or create a counter for this queue
       // We'll get the last ticket number and increment atomically
-      const lastEntry = await tx.queueEntry.findFirst({
-        where: { queueId: queue.id },
+      const todayStart = startOfTodayIST()
+      const lastToday = await tx.queueEntry.findFirst({
+        where: { queueId: queue.id, joinedAt: { gte: todayStart } },
         orderBy: { ticketNumber: "desc" },
       })
-
-      const ticketNumber = (lastEntry?.ticketNumber ?? 1000) + 1
+      const ticketNumber = (lastToday?.ticketNumber ?? 0) + 1
 
       const walkInUser = await tx.user.upsert({
         where: { email: `walkin-${Date.now()}@queue.local` },

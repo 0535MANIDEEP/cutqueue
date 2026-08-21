@@ -14,8 +14,13 @@ function fmtMin(min: number) {
   const hr = h % 12 || 12
   return `${hr}:${String(m).padStart(2,"0")} ${ampm}`
 }
-function nowIST() {
+export function nowIST() {
   return new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Kolkata" }))
+}
+export function startOfTodayIST(now = nowIST()) {
+  const d = new Date(now)
+  d.setHours(0, 0, 0, 0)
+  return d
 }
 
 export function isBusinessOpen(openingHours: OpeningHours | null | undefined, now = nowIST(), holidays?: { date: string; closed: boolean }[]) {

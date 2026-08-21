@@ -6,7 +6,7 @@ import { queueJoinSchema } from "@/lib/validation"
 import { logger } from "@/lib/logger"
 import { enforceQueueLimits } from "@/lib/trial-enforcement"
 import { requirePermission, Role } from "@/lib/roles"
-import { isBusinessOpen } from "@/lib/business-hours"
+import { isBusinessOpen, startOfTodayIST } from "@/lib/business-hours"
 
 export async function GET(req: Request) {
   try {
@@ -152,13 +152,13 @@ export async function POST(req: Request) {
         throw new Error("Already in queue")
       }
 
-      // Get last ticket number atomically within transaction
-      const lastEntry = await tx.queueEntry.findFirst({
-        where: { queueId: lockedQueue.id },
+      // Daily reset: ticket 1..N per day (psychologically small), not forever-growing
+      const todayStart = startOfTodayIST()
+      const lastToday = await tx.queueEntry.findFirst({
+        where: { queueId: lockedQueue.id, joinedAt: { gte: todayStart } },
         orderBy: { ticketNumber: "desc" },
       })
-
-      const ticketNumber = (lastEntry?.ticketNumber ?? 1000) + 1
+      const ticketNumber = (lastToday?.ticketNumber ?? 0) + 1
 
       const entry = await tx.queueEntry.create({
         data: {

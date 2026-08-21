@@ -79,10 +79,10 @@ function QueueStatus() {
           <span className="inline-flex items-center gap-2 text-xs px-3 py-1 rounded-full bg-[#0A0F0D] border border-[#263329] text-[#EFE9DA]/70"><span className={`w-2 h-2 rounded-full ${status.dot}`} />{myEntry.status}</span>
         </div>
         <div className="text-center">
-          <div className={`mx-auto w-[112px] h-[112px] rounded-[20px] border flex flex-col items-center justify-center ${myEntry.status==='CALLED'?'bg-[#E8B547] border-[#E8B547] shadow-[0_10px_30px_rgba(232,181,71,0.3)] animate-pulse':'bg-[#0A0F0D] border-[#263329]'}`}>
-            <span className={`text-xs font-mono tracking-widest ${myEntry.status==='CALLED'?'text-[#0A0F0D]/60':'text-[#EFE9DA]/30'}`}>TICKET</span>
-            <span className={`text-4xl font-black ${myEntry.status==='CALLED'?'text-[#0A0F0D]':'text-[#EFE9DA]'}`}>#{myEntry.ticketNumber}</span>
-            <span className={`text-xs font-semibold ${myEntry.status==='CALLED'?'text-[#0A0F0D]':'text-[#E8B547]'}`}>{myEntry.serviceType}</span>
+          <div className={`mx-auto w-[140px] h-[112px] rounded-[20px] border flex flex-col items-center justify-center ${myEntry.status==='CALLED'?'bg-[#E8B547] border-[#E8B547] shadow-[0_10px_30px_rgba(232,181,71,0.3)] animate-pulse':'bg-[#0A0F0D] border-[#263329]'}`}>
+            <span className={`text-xs font-mono tracking-widest ${myEntry.status==='CALLED'?'text-[#0A0F0D]/60':'text-[#EFE9DA]/30'}`}>{myEntry.status==='WAITING'?'POSITION':'TICKET'}</span>
+            <span className={`text-5xl font-black ${myEntry.status==='CALLED'?'text-[#0A0F0D]':'text-[#EFE9DA]'}`}>{myEntry.status==='WAITING'? myPosition : `#${myEntry.ticketNumber}`}</span>
+            <span className={`text-xs font-mono ${myEntry.status==='CALLED'?'text-[#0A0F0D]/60':'text-[#EFE9DA]/30'}`}>{myEntry.status==='WAITING'?`Ticket #${myEntry.ticketNumber} • ${myEntry.serviceType}`: myEntry.serviceType}</span>
           </div>
           <div className={`mt-4 rounded-full px-4 py-2 border text-sm font-semibold inline-flex items-center gap-2 ${myEntry.status==='CALLED'?'bg-[#E8B547] border-[#E8B547] text-[#0A0F0D]':'bg-[#0A0F0D] border-[#263329] text-[#EFE9DA]'}`}>{status.label}</div>
         </div>
