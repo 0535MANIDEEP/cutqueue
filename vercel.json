@@ -1,34 +1,12 @@
 {
   "buildCommand": "npm run build",
-  "devCommand": "npm run dev",
+  "devCommand": "next dev",
   "installCommand": "npm install",
   "framework": "nextjs",
-  "regions": ["iad1"],
-  "functions": {
-    "src/app/api/**/*.ts": {
-      "maxDuration": 30
-    }
-  },
   "crons": [
-    {
-      "path": "/api/cron/trial-expiration",
-      "schedule": "0 0 * * *"
-    },
-    {
-      "path": "/api/cron/booking-reminders",
-      "schedule": "0 8 * * *"
-    },
-    {
-      "path": "/api/cron/queue-cleanup",
-      "schedule": "0 0 * * *"
-    },
     {
       "path": "/api/cron/no-shows",
       "schedule": "30 * * * *"
-    },
-    {
-      "path": "/api/cron/review-requests",
-      "schedule": "0 10 * * *"
     }
   ],
   "headers": [
